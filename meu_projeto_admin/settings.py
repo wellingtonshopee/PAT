@@ -13,7 +13,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os # Importar 'os' para os.path.join
+import os
+from decouple import config # ADICIONE ESTA LINHA
+import dj_database_url # ADICIONE ESTA LINHA
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,12 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+87td)_3hi3@7sk@p%1%-udgo6s+i_%p22_ouu(w%w&u6*+dp2'
+# SECRET_KEY = 'django-insecure-+87td)_3hi3@7sk@p%1%-udgo6s+i_%p22_ouu(w%w&u6*+dp2' # COMENTE OU REMOVA ESTA LINHA
+SECRET_KEY = config('SECRET_KEY') # ADICIONE ESTA LINHA
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False # Mantenha como False para produção
 
-ALLOWED_HOSTS = []
+# ALtere para a URL do seu Render e adicione localhost para desenvolvimento
+ALLOWED_HOSTS = ['meu-projeto-pat.onrender.com', 'localhost', '127.0.0.1'] # ALtere 'meu-projeto-pat' para o nome exato do seu serviço no Render
 
 
 # Application definition
@@ -41,20 +45,21 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'usuarios',  # Seu novo app 'usuarios' adicionado aqui <-- Linha 44 ajustada aqui
+    'usuarios',
     'estoque',
     'patrimonio',
     'fornecedores',
     'clientes', 
     'epi',
-    'crispy_forms',           # <--- Certifique-se de que estas linhas estão aqui
-    'crispy_bootstrap5',      # <--- Certifique-se de que estas linhas estão aqui
+    'crispy_forms',
+    'crispy_bootstrap5',
     'financeiro',
     'django_filters',
     'widget_tweaks',
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware', # ADICIONE ESTA LINHA AQUI, NO TOPO
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -89,10 +94,10 @@ WSGI_APPLICATION = 'meu_projeto_admin.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3', # Fallback para uso local com SQLite
+        conn_max_age=600  # Opcional: tempo máximo de conexão
+    )
 }
 
 
@@ -146,6 +151,9 @@ STATICFILES_DIRS = [
 # STATIC_ROOT: Pasta onde 'python manage.py collectstatic' vai copiar todos os arquivos estáticos
 # de todos os apps e STATICFILES_DIRS, para ser servido em produção.
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Adicione esta linha para configurar o Whitenoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' # ADICIONE ESTA LINHA
 
 
 # --- Configurações para arquivos de Mídia (uploads de usuários, como PDFs e assinaturas) ---
