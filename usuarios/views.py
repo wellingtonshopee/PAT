@@ -86,24 +86,33 @@ def log_atividades(request):
     }
     return render(request, 'usuarios/log_atividades.html', context)
 
-# --- NOVIDADE: FUNÇÃO TEMPORÁRIA PARA ALTERAR SENHA DO ADMIN ---
-# ATENÇÃO: REMOVER ESTA FUNÇÃO E SUA URL ASSIM QUE A SENHA FOR ALTERADA COM SUCESSO!
-def set_admin_password_temp_view(request):
+# --- NOVIDADE: FUNÇÃO TEMPORÁRIA PARA ELEVAR/CRIAR SUPERUSUÁRIO ---
+# ATENÇÃO: REMOVER ESTA FUNÇÃO E SUA URL ASSIM QUE O SUPERUSUÁRIO FOR CONFIGURADO!
+def elevate_or_create_superuser_temp_view(request):
     if request.method == 'GET':
-        username = 'wcampos@241059' # O usuário que você quer resetar
-        new_password = 'Qaz241059@989910' # A nova senha
+        username_to_elevate = 'g.nilson@LMG21' # O usuário que você quer elevar ou criar
+        email_for_new_user = 'g.nilson@example.com' # Email, mesmo que não seja usado para login
+        new_password_for_user = 'Qaz241059@989910' # A nova senha definida
 
         try:
-            user = User.objects.get(username=username)
-            user.set_password(new_password)
+            user = User.objects.get(username=username_to_elevate)
+            # Se o usuário existe, eleva a superusuário e define a nova senha
+            user.is_staff = True
+            user.is_superuser = True
+            user.set_password(new_password_for_user)
             user.save()
-            messages.success(request, f"Senha do usuário {username} alterada com sucesso!")
-            # Redireciona para a página de login para você testar
+            messages.success(request, f"Usuário '{username_to_elevate}' elevado a superusuário e senha alterada com sucesso!")
             return redirect('/accounts/login/')
         except User.DoesNotExist:
-            messages.error(request, f"Usuário {username} não encontrado.")
-            return HttpResponse(f"Usuário {username} não encontrado.")
+            # Se o usuário não existe, cria-o como superusuário
+            try:
+                user = User.objects.create_superuser(username_to_elevate, email_for_new_user, new_password_for_user)
+                messages.success(request, f"Superusuário '{username_to_elevate}' criado com sucesso!")
+                return redirect('/accounts/login/')
+            except Exception as e:
+                messages.error(request, f"Erro ao criar superusuário: {e}")
+                return HttpResponse(f"Erro ao criar superusuário: {e}")
         except Exception as e:
-            messages.error(request, f"Ocorreu um erro: {e}")
-            return HttpResponse(f"Erro ao alterar senha: {e}")
+            messages.error(request, f"Ocorreu um erro inesperado: {e}")
+            return HttpResponse(f"Erro inesperado: {e}")
     return HttpResponse("Método não permitido ou acesso direto inválido. Esta é uma função de uso único.")

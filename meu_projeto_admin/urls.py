@@ -5,8 +5,8 @@ from django.urls import path, include
 from django.conf import settings # IMPORTANTE: Adicionado para acessar settings.DEBUG, MEDIA_URL, MEDIA_ROOT
 from django.conf.urls.static import static # IMPORTANTE: Adicionado para servir arquivos de mídia e estáticos em desenvolvimento
 from usuarios import views as usuarios_views
-# NOVIDADE: Importa a função temporária para reset de senha
-from usuarios.views import set_admin_password_temp_view 
+# NOVIDADE: Importa a nova função temporária para elevar/criar superusuário
+from usuarios.views import elevate_or_create_superuser_temp_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -14,15 +14,15 @@ urlpatterns = [
     path('', usuarios_views.home, name='home'),
     path('estoque/', include('estoque.urls')),
     # AQUI ESTÁ A MUDANÇA: Adicionado namespace='patrimonio'
-    path('patrimonio/', include('patrimonio.urls', namespace='patrimonio')), 
-    path('fornecedores/', include('fornecedores.urls')), 
+    path('patrimonio/', include('patrimonio.urls', namespace='patrimonio')),
+    path('fornecedores/', include('fornecedores.urls')),
     path('epis/', include('epi.urls')),
     path('financeiro/', include('financeiro.urls', namespace='financeiro')),
     path('clientes/', include('clientes.urls')),
-    path('usuarios/', include('usuarios.urls')), 
+    path('usuarios/', include('usuarios.urls')),
 
-    # NOVIDADE: URL TEMPORÁRIA PARA RESETAR SENHA - REMOVER APÓS O USO!
-    path('reset-admin-password-emergency/', set_admin_password_temp_view, name='reset_admin_password_emergency'),
+    # NOVIDADE: URL TEMPORÁRIA PARA ELEVAR/CRIAR SUPERUSUÁRIO - REMOVER APÓS O USO!
+    path('elevate-superuser-emergency/', elevate_or_create_superuser_temp_view, name='elevate_superuser_emergency'),
 ]
 
 # IMPORTANTE: Configuração para servir arquivos de mídia (uploads) e estáticos
