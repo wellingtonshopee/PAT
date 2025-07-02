@@ -1,0 +1,27 @@
+{% extends 'base.html' %} {# Altere 'base.html' para o seu template base, se tiver um #}
+
+{% block content %}
+    <div class="container mt-4">
+        <h2>{{ title }}</h2>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ cliente.razao_social }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{ cliente.nome_fantasia|default:"" }}</h6>
+                <p class="card-text"><strong>CNPJ/CPF:</strong> {{ cliente.cnpj_cpf|default:"Não informado" }}</p>
+                <p class="card-text"><strong>Data de Nascimento:</strong> {{ cliente.data_nascimento|date:"d/m/Y"|default:"Não informado" }}</p> {# NOVO CAMPO #}
+                <p class="card-text"><strong>E-mail:</strong> {{ cliente.email|default:"Não informado" }}</p>
+                <p class="card-text"><strong>Telefone:</strong> {{ cliente.telefone|default:"Não informado" }}</p>
+                <p class="card-text"><strong>Endereço:</strong> {{ cliente.endereco|default:"Não informado" }}</p>
+                <p class="card-text"><strong>CEP:</strong> {{ cliente.cep|default:"Não informado" }}</p>             {# NOVO CAMPO #}
+                <p class="card-text"><strong>Cidade:</strong> {{ cliente.cidade|default:"Não informado" }}</p>       {# NOVO CAMPO #}
+                <p class="card-text"><strong>Estado:</strong> {{ cliente.estado|default:"Não informado" }}</p>       {# NOVO CAMPO #}
+                <p class="card-text"><small class="text-muted">Cadastrado em: {{ cliente.data_cadastro|date:"d/m/Y H:i" }}</small></p>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'editar_cliente' cliente.pk %}" class="btn btn-warning">Editar</a>
+                <a href="{% url 'excluir_cliente' cliente.pk %}" class="btn btn-danger">Excluir</a>
+                <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Voltar à Lista</a>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}Editar Conta a Receber{% else %}Nova Conta a Receber{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        {% if form.instance.pk %}Editar Conta a Receber{% else %}Nova Conta a Receber{% endif %}
+    </h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }} {# Isso renderiza todos os campos do seu formulário com Crispy Forms #}
+                
+                <hr>
+                <button type="submit" class="btn btn-success me-2">Salvar</button>
+                <a href="{% url 'financeiro:lista_contas_receber' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

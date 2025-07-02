@@ -1,0 +1,48 @@
+{# pat/epi/templates/epi/adicionar_epi.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Adicionar Novo EPI{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Adicionar Novo EPI</h1>
+
+    <div class="card p-4 shadow-sm">
+        <form method="post">
+            {% csrf_token %}
+
+            {% for field in form %}
+                {% if field.widget_type == 'checkbox' %}
+                    {# Tratamento especial para checkboxes #}
+                    <div class="form-check mb-3">
+                        {% render_field field class="form-check-input" %}
+                        <label class="form-check-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {# Tratamento padrão para outros tipos de campo #}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {% render_field field class="form-control" %}
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <button type="submit" class="btn btn-success mt-3">Adicionar EPI</button>
+            <a href="{% url 'listar_epis' %}" class="btn btn-secondary mt-3 ms-2">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{# pat/estoque/templates/estoque/listar_itens_estoque.html #}
+
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Controle de Estoque{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Itens de Estoque</h1>
+
+    {# --- Início do Bloco do Formulário de Filtro --- #}
+    <div class="card mb-4 p-4 shadow-sm">
+        <h5 class="mb-3">Filtrar Itens</h5>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="id_search_query" class="form-label">Pesquisar por Nome, Código ou Descrição</label>
+                {% render_field filter_form.search_query class="form-control" placeholder="Digite para pesquisar..." %}
+            </div>
+            <div class="col-md-3">
+                <label for="id_categoria" class="form-label">Categoria</label>
+                {% render_field filter_form.categoria class="form-select" %}
+            </div>
+            <div class="col-md-3">
+                <label for="id_localizacao" class="form-label">Localização</label>
+                {% render_field filter_form.localizacao class="form-select" %}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark w-100 me-2">Filtrar</button>
+                <a href="{% url 'listar_itens_estoque' %}" class="btn btn-outline-secondary w-100">Limpar</a>
+            </div>
+        </form>
+    </div>
+    {# --- Fim do Bloco do Formulário de Filtro --- #}
+
+    {# Links para adicionar novo item, registrar entrada e saída #}
+    <p class="mb-4">
+        <a href="{% url 'adicionar_item_estoque' %}" class="btn btn-success me-2">Adicionar Novo Item</a>
+        <a href="{% url 'registrar_entrada_estoque' %}" class="btn btn-primary me-2">Registrar Entrada</a>
+        <a href="{% url 'registrar_saida_estoque' %}" class="btn btn-warning me-2">Registrar Saída</a>
+        <a href="{% url 'listar_itens_estoque' %}?estoque_status=abaixo_minimo" class="btn btn-info me-2">Ver Itens com Estoque Baixo</a>
+        <a href="{% url 'listar_itens_estoque' %}?estoque_status=zerado" class="btn btn-danger">Ver Itens Zerados</a>
+    </p>
+
+    {# Tabela de Itens de Estoque (o restante do código da tabela) ... #}
+    {% if itens %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome do Item</th>
+                        <th>Código Interno</th>
+                        <th>Quantidade</th>
+                        <th>Est. Mínimo</th>
+                        <th>Unidade</th>
+                        <th>Preço Unitário</th>
+                        <th>Categoria</th>
+                        <th>Localização</th>
+                        <th>Última Atualização</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                        <tr class="{% if item.is_estoque_zerado %}bg-danger text-white{% elif item.is_abaixo_estoque_minimo %}bg-warning text-dark{% endif %}">
+                            <td>{{ item.nome }}</td>
+                            <td>{{ item.codigo_interno|default_if_none:"-" }}</td>
+                            <td>
+                                {{ item.quantidade }}
+                                {% if item.is_estoque_zerado %}
+                                    <span class="badge bg-light text-danger ms-2">ZERADO!</span>
+                                {% elif item.is_abaixo_estoque_minimo %}
+                                    <span class="badge bg-light text-warning ms-2">BAIXO!</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.estoque_minimo }}</td>
+                            <td>{{ item.unidade_medida }}</td>
+                            <td>{{ item.preco_unitario|default_if_none:"N/A" }}</td>
+                            <td>{{ item.categoria|default_if_none:"Não Categorizado" }}</td>
+                            <td>{{ item.localizacao|default_if_none:"Não Definido" }}</td>
+                            <td>{{ item.data_ultima_atualizacao|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'editar_item_estoque' item.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_item_estoque' item.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir o item \\'{{ item.nome }}\\''?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum item de estoque encontrado.
+        </div>
+    {% endif %}
+{% endblock %}

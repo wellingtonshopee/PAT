@@ -1,0 +1,155 @@
+{# pat/patrimonio/templates/patrimonio/listar_itens_patrimonio.html #}
+{% extends 'base.html' %} {# Estende o template base #}
+{% load widget_tweaks %} {# Carrega o widget_tweaks para estilizar o formulário #}
+{% load crispy_forms_tags %} {# Adicione crispy_forms_tags se estiver usando Crispy Forms para o filtro #}
+{% load patrimonio_extras %}
+
+{% block title %}Patrimônio - Itens Registrados{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Itens de Patrimônio</h1>
+
+    {# Bloco do Formulário de Filtro #}
+    <div class="card mb-4 p-4 shadow-sm">
+        <h5 class="mb-3">Filtrar Itens de Patrimônio</h5>
+        <form method="get" class="row g-3 align-items-end">
+            {# Para formulários GET, CSRF token não é estritamente necessário, mas mantido se for uma preferência #}
+            {% csrf_token %} 
+            <div class="col-md-4 col-sm-12">
+                <label for="id_search_query" class="form-label">{{ filter_form.search_query.label }}</label>
+                {% render_field filter_form.search_query class="form-control" placeholder=filter_form.search_query.help_text %}
+                <div class="form-text text-muted">{{ filter_form.search_query.help_text }}</div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <label for="id_categoria" class="form-label">{{ filter_form.categoria.label }}</label>
+                {% render_field filter_form.categoria class="form-select" %}
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <label for="id_localizacao" class="form-label">{{ filter_form.localizacao.label }}</label>
+                {% render_field filter_form.localizacao class="form-select" %}
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <label for="id_estado_conservacao" class="form-label">{{ filter_form.estado_conservacao.label }}</label>
+                {% render_field filter_form.estado_conservacao class="form-select" %}
+            </div>
+            {# NOVO: Campo de filtro para Status #}
+            <div class="col-md-2 col-sm-6"> 
+                <label for="id_status" class="form-label">{{ filter_form.status.label }}</label>
+                {% render_field filter_form.status class="form-select" %}
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <label for="id_data_aquisicao_inicio" class="form-label">{{ filter_form.data_aquisicao_inicio.label }}</label>
+                {% render_field filter_form.data_aquisicao_inicio class="form-control" %}
+                <div class="form-text text-muted">{{ filter_form.data_aquisicao_inicio.help_text }}</div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <label for="id_data_aquisicao_fim" class="form-label">{{ filter_form.data_aquisicao_fim.label }}</label>
+                {% render_field filter_form.data_aquisicao_fim class="form-control" %}
+                <div class="form-text text-muted">{{ filter_form.data_aquisicao_fim.help_text }}</div>
+            </div>
+            <div class="col-md-4 col-sm-12 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark w-100 me-2">Aplicar Filtros</button>
+                <a href="{% url 'patrimonio:listar_itens_patrimonio' %}" class="btn btn-outline-secondary w-100">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    {# Links de Ação #}
+    <p class="mb-4">
+        <a href="{% url 'patrimonio:adicionar_item_patrimonio' %}" class="btn btn-success me-2">Adicionar Novo Patrimônio</a>
+        <a href="{% url 'patrimonio:listar_movimentacoes' %}" class="btn btn-primary me-2">Histórico de Movimentações</a>
+        <a href="{% url 'patrimonio:gerar_relatorio_patrimonio' %}" class="btn btn-info text-white me-2">Gerar Relatório</a>
+        {# NOVO: Link para a tela de Coleta de Inventário #}
+        <a href="{% url 'patrimonio:coleta_inventario' %}" class="btn btn-warning text-white">
+            <i class="fas fa-qrcode"></i> Coleta de Inventário
+        </a>
+    </p>
+
+    {# Tabela de Itens de Patrimônio #}
+    {% if itens_patrimonio %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Código</th>
+                        <th>Nº Série</th>
+                        <th>Valor Aquisição</th>
+                        <th>Data Aquisição</th>
+                        <th>Localização</th>
+                        <th>Categoria</th>
+                        <th>Responsável</th>
+                        <th>Estado</th>
+                        {# NOVO: Coluna para Status #}
+                        <th>Status</th> 
+                        <th>Última Atualização</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens_patrimonio %}
+                        <tr>
+                            <td>
+                                {# Link para a página de detalhes do item #}
+                                <a href="{% url 'patrimonio:detalhar_item_patrimonio' item.pk %}">{{ item.nome }}</a>
+                            </td>
+                            <td>{{ item.codigo_patrimonial }}</td>
+                            <td>{{ item.numero_serie|default_if_none:"-" }}</td>
+                            <td>{{ item.valor_aquisicao|currency_br }}</td>
+                            <td>{{ item.data_aquisicao|date:"d/m/Y" }}</td>
+                            <td>{{ item.localizacao.nome|default_if_none:"Não Definido" }}</td> {# Acesse .nome para Localização #}
+                            <td>{{ item.categoria.nome|default_if_none:"Não Categorizado" }}</td> {# Acesse .nome para Categoria #}
+                            <td>{{ item.responsavel_atual.get_full_name|default:item.responsavel_atual.username|default_if_none:"N/A" }}</td> {# Acessa nome completo ou username #}
+                            <td>{{ item.get_estado_conservacao_display }}</td> {# Obtém o valor amigável do choice #}
+                            {# NOVO: Exibição do Status com Badge #}
+                            <td>
+                                <span class="badge 
+                                    {% if item.status == 'ATIVO' %}bg-success
+                                    {% elif item.status == 'BAIXADO' %}bg-danger
+                                    {% elif item.status == 'TRANSFERIDO' %}bg-info
+                                    {% else %}bg-secondary{% endif %} text-white">
+                                    {{ item.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ item.data_ultima_atualizacao|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'patrimonio:editar_item_patrimonio' item.pk %}" class="btn btn-sm btn-info me-2" title="Editar">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                
+                                {# Ações de Baixa e Transferência - Somente se o item não estiver baixado #}
+                                {% if item.status != 'BAIXADO' %}
+                                    <a href="{% url 'patrimonio:baixar_item_patrimonio' item.pk %}" class="btn btn-sm btn-danger me-2" title="Baixar">
+                                        <i class="fas fa-trash-alt"></i> Baixar
+                                    </a>
+                                    <a href="{% url 'patrimonio:transferir_item_patrimonio' item.pk %}" class="btn btn-sm btn-primary me-2" title="Transferir">
+                                        <i class="fas fa-exchange-alt"></i> Transferir
+                                    </a>
+                                {% else %}
+                                    <span class="badge bg-secondary me-2" title="Item Baixado">
+                                        <i class="fas fa-archive"></i> Baixado
+                                    </span>
+                                {% endif %}
+                                
+                                {# Botão de Excluir - Cuidado com exclusão direta, considere soft delete #}
+                                <form action="{% url 'patrimonio:excluir_item_patrimonio' item.pk %}" method="post" style="display:inline;" 
+                                        onsubmit="return confirm('Tem certeza que deseja excluir o item de patrimônio \'{{ item.nome }}\'? Esta ação é irreversível e removerá também todas as movimentações associadas.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-warning" title="Excluir">
+                                        <i class="fas fa-times-circle"></i> Excluir
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum item de patrimônio encontrado.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{# pat/epi/templates/epi/listar_saidas_epi.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Saídas de EPI{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Saídas de EPI Registradas</h1>
+
+    {# Bloco do Formulário de Filtro #}
+    <div class="card mb-4 p-4 shadow-sm">
+        <h5 class="mb-3">Filtrar Saídas</h5>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="id_epi" class="form-label">{{ filter_form.epi.label }}</label>
+                {% render_field filter_form.epi class="form-select" %}
+            </div>
+            <div class="col-md-3">
+                <label for="id_colaborador" class="form-label">{{ filter_form.colaborador.label }}</label>
+                {% render_field filter_form.colaborador class="form-select" %}
+            </div>
+            <div class="col-md-2">
+                <label for="id_data_inicio" class="form-label">{{ filter_form.data_inicio.label }}</label>
+                {% render_field filter_form.data_inicio class="form-control" %}
+            </div>
+            <div class="col-md-2">
+                <label for="id_data_fim" class="form-label">{{ filter_form.data_fim.label }}</label>
+                {% render_field filter_form.data_fim class="form-control" %}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark w-100 me-2">Aplicar Filtros</button>
+                <a href="{% url 'listar_saidas_epi' %}" class="btn btn-outline-secondary w-100">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    <p class="mb-4">
+        <a href="{% url 'adicionar_saida_epi' %}" class="btn btn-success me-2">Registrar Nova Saída</a>
+        <a href="{% url 'listar_epis' %}" class="btn btn-secondary">Voltar para EPIs</a>
+    </p>
+
+    {% if saidas_epi %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>EPI</th>
+                        <th>Colaborador</th>
+                        <th>Quantidade</th>
+                        <th>Data de Saída</th>
+                        <th>Observações</th>
+                        <th>Ações</th> {# Título da coluna de Ações #}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for saida in saidas_epi %}
+                        <tr>
+                            <td>{{ saida.epi.nome }} ({{ saida.epi.ca }})</td>
+                            <td>{{ saida.colaborador.nome_completo }} ({{ saida.colaborador.matricula }})</td>
+                            <td>{{ saida.quantidade }}</td>
+                            <td>{{ saida.data_saida|date:"d/m/Y H:i" }}</td>
+                            <td>{{ saida.observacoes|default_if_none:"-" }}</td>
+                            <td>
+                                <a href="{% url 'editar_saida_epi' saida.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_saida_epi' saida.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta saída de EPI?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger me-2">Excluir</button>
+                                </form>
+                                {# NOVO: Botão para Imprimir PDF #}
+                                <a href="{% url 'imprimir_saida_epi_pdf' saida.pk %}" class="btn btn-sm btn-primary" target="_blank">Imprimir PDF</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhuma saída de EPI encontrada com os critérios de filtro.
+        </div>
+    {% endif %}
+{% endblock %}

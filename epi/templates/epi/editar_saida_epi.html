@@ -1,0 +1,54 @@
+{# pat/epi/templates/epi/editar_saida_epi.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load epi_filters %} {# Adicione esta linha para carregar seu filtro customizado! #}
+
+{% block title %}Editar Saída de EPI{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Editar Saída de EPI</h1>
+
+    <div class="card p-4 shadow-sm">
+        <form method="post" enctype="multipart/form-data"> {# Mantenha enctype #}
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    
+                    {# Verifica se o campo atual é o campo de assinatura digital #}
+                    {% if field.name == 'assinatura_digital' %}
+                        {# Se a assinatura_digital já existe (tem um valor) #}
+                        {% if field.value %}
+                            <p>Assinatura atual:</p>
+                            {# Agora usamos o filtro customizado 'starts_with' #}
+                            {% if field.value and field.value.url %} {# Se for um FileField/ImageField do Django #}
+                                <img src="{{ field.value.url }}" alt="Assinatura" style="max-width: 300px; height: auto; border: 1px solid #ccc; background-color: #f8f9fa;">
+                            {% elif field.value|starts_with:'data:image' %} {# Se for uma string base64 #}
+                                <img src="{{ field.value }}" alt="Assinatura" style="max-width: 300px; height: auto; border: 1px solid #ccc; background-color: #f8f9fa;">
+                            {% else %}
+                                <p class="text-muted">Assinatura salva: {{ field.value }}</p>
+                            {% endif %}
+                            <small class="form-text text-muted">A assinatura foi coletada e salva.</small>
+                            <input type="hidden" name="{{ field.name }}" value="{{ field.value|default_if_none:'' }}">
+                        {% else %}
+                            <p class="text-muted">Nenhuma assinatura registrada para esta saída.</p>
+                            <input type="hidden" name="{{ field.name }}" value="">
+                        {% endif %}
+                    {% else %}
+                        {# Renderização padrão para os outros campos do formulário #}
+                        {% render_field field class="form-control" %}
+                    {% endif %}
+                    
+                    {% if field.help_text %}
+                        <div class="form-text text-muted">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary mt-3">Salvar Alterações</button>
+            <a href="{% url 'listar_saidas_epi' %}" class="btn btn-secondary mt-3 ms-2">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %} {# Estende o template base #}
+{% load widget_tweaks %} {# Carrega o widget_tweaks para estilizar o formulário #}
+
+{% block title %}Editar Item: {{ item.nome }}{% endblock %} {# Título dinâmico #}
+
+{% block content %}
+    <h1 class="mb-4">Editar Item de Estoque: {{ item.nome }}</h1> {# Título da página #}
+
+    <div class="card p-4 shadow-sm">
+        <form method="post">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.help_text %}
+                        <div class="form-text text-muted">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary mt-3">Salvar Alterações</button>
+            <a href="{% url 'listar_itens_estoque' %}" class="btn btn-secondary mt-3 ms-2">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

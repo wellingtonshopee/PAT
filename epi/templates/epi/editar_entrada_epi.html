@@ -1,0 +1,29 @@
+{# pat/epi/templates/epi/editar_entrada_epi.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Entrada de EPI{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Editar Entrada de EPI</h1>
+
+    <div class="card p-4 shadow-sm">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.help_text %}
+                        <div class="form-text text-muted">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary mt-3">Salvar Alterações</button>
+            <a href="{% url 'listar_entradas_epi' %}" class="btn btn-secondary mt-3 ms-2">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

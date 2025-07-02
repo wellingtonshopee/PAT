@@ -1,0 +1,42 @@
+{% extends 'base.html' %} 
+{% load widget_tweaks %} {# <--- ALTERADO PARA widget_tweaks #}
+
+{% block title %}Cadastro de Usuários{% endblock %} 
+
+{% block content %} 
+    <h1>Cadastro de Usuários</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}:</label>
+                {% if field.name == 'grupos' %}
+                    <div class="d-flex flex-wrap">
+                        {% for checkbox in field %}
+                            <div class="form-check me-3">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                    {{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {# Usando render_field do widget_tweaks para adicionar a classe #}
+                    {% render_field field class="form-control" %} 
+                {% endif %}
+
+                {% if field.help_text %}
+                    <div class="form-text text-muted">{{ field.help_text }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                    <div class="alert alert-danger mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Cadastrar Usuário</button>
+    </form>
+{% endblock %}

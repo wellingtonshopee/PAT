@@ -1,0 +1,47 @@
+{# pat/epi/templates/epi/listar_tipos_epi.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Tipos de EPI{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Tipos de EPI Cadastrados</h1>
+
+    <p class="mb-4">
+        <a href="{% url 'adicionar_tipo_epi' %}" class="btn btn-success me-2">Adicionar Novo Tipo de EPI</a>
+        <a href="{% url 'listar_epis' %}" class="btn btn-secondary">Voltar para EPIs</a>
+    </p>
+
+    {% if tipos_epi %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tipo de EPI</th>
+                        <th>Descrição</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tipo in tipos_epi %}
+                        <tr>
+                            <td>{{ tipo.nome }}</td>
+                            <td>{{ tipo.descricao|default_if_none:"-" }}</td>
+                            <td>
+                                <a href="{% url 'editar_tipo_epi' tipo.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_tipo_epi' tipo.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir o tipo \\'{{ tipo.nome }}\\''? Isso pode afetar EPIs associados.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum Tipo de EPI cadastrado.
+        </div>
+    {% endif %}
+{% endblock %}

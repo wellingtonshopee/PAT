@@ -1,0 +1,20 @@
+{% extends 'base.html' %} {# Altere 'base.html' para o seu template base, se tiver um #}
+{% load crispy_forms_tags %} {# Adicione esta linha para usar crispy forms #}
+
+{% block content %}
+    <div class="container mt-4">
+        <h2>{{ title }}</h2>
+        <form method="post">
+            {% csrf_token %}
+            {# Se você quiser mais controle, poderia usar: #}
+            {# {{ form.razao_social|as_crispy_field }} #}
+            {# {{ form.nome_fantasia|as_crispy_field }} #}
+            {# ... e assim por diante para cada campo #}
+
+            {{ form|crispy }} {# Renderiza o formulário com o estilo crispy-forms #}
+
+            <button type="submit" class="btn btn-success mt-3">Salvar Cliente</button>
+            <a href="{% url 'listar_clientes' %}" class="btn btn-secondary mt-3">Cancelar</a>
+        </form>
+    </div>
+{% endblock content %}

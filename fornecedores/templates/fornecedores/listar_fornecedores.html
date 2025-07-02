@@ -1,0 +1,88 @@
+{# pat/fornecedores/templates/fornecedores/listar_fornecedores.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Fornecedores - Cadastrados{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Fornecedores Cadastrados</h1>
+
+    {# Bloco do Formulário de Filtro #}
+    <div class="card mb-4 p-4 shadow-sm">
+        <h5 class="mb-3">Filtrar Fornecedores</h5>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="id_search_query" class="form-label">{{ filter_form.search_query.label }}</label>
+                {% render_field filter_form.search_query class="form-control" placeholder=filter_form.search_query.help_text %}
+                <div class="form-text text-muted">{{ filter_form.search_query.help_text }}</div>
+            </div>
+            <div class="col-md-3">
+                <label for="id_tipo_fornecedor" class="form-label">{{ filter_form.tipo_fornecedor.label }}</label>
+                {% render_field filter_form.tipo_fornecedor class="form-select" %}
+            </div>
+            <div class="col-md-2">
+                <label for="id_ativo" class="form-label">{{ filter_form.ativo.label }}</label>
+                {% render_field filter_form.ativo class="form-select" %}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark w-100 me-2">Filtrar</button>
+                <a href="{% url 'listar_fornecedores' %}" class="btn btn-outline-secondary w-100">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    {# Links de Ação #}
+    <p class="mb-4">
+        <a href="{% url 'adicionar_fornecedor' %}" class="btn btn-success me-2">Adicionar Novo Fornecedor</a>
+    </p>
+
+    {# Tabela de Fornecedores #}
+    {% if fornecedores %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome Fantasia</th>
+                        <th>Razão Social</th>
+                        <th>CNPJ/CPF</th>
+                        <th>Telefone</th>
+                        <th>E-mail</th>
+                        <th>Tipo</th>
+                        <th>Ativo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fornecedor in fornecedores %}
+                        <tr>
+                            <td>{{ fornecedor.nome_fantasia }}</td>
+                            <td>{{ fornecedor.razao_social }}</td>
+                            <td>{{ fornecedor.cnpj_cpf }}</td>
+                            <td>{{ fornecedor.telefone|default_if_none:"-" }}</td>
+                            <td>{{ fornecedor.email|default_if_none:"-" }}</td>
+                            <td>{{ fornecedor.tipo_fornecedor|default_if_none:"Não Definido" }}</td>
+                            <td>
+                                {% if fornecedor.ativo %}
+                                    <span class="badge bg-success">Sim</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Não</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'editar_fornecedor' fornecedor.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_fornecedor' fornecedor.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir o fornecedor \\'{{ fornecedor.nome_fantasia }}\\''?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum fornecedor encontrado.
+        </div>
+    {% endif %}
+{% endblock %}

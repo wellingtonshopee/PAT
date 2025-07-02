@@ -1,0 +1,322 @@
+{% extends 'base.html' %} {# Altere 'base.html' para o seu template base, se for diferente #}
+{% load crispy_forms_tags %} {# Se você usa django-crispy-forms para estilizar formulários #}
+{% load custom_filters %} {# Se você tiver filtros customizados para moeda ou data #}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ title }}</h1>
+        <div>
+            {# Você pode adicionar botões de exportação aqui, por exemplo: #}
+            {# <a href="{% url 'financeiro:exportar_relatorio_csv' %}" class="btn btn-primary"><i class="fas fa-file-csv me-2"></i> Exportar CSV</a> #}
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros do Relatório</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    {{ form.data_inicio|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.data_fim|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.tipo_conta|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.categoria|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.status_geral|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.fornecedor|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.cliente|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.search_query|as_crispy_field }}
+                </div>
+                <div class="col-md-auto d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i> Aplicar Filtros
+                    </button>
+                    <a href="{% url 'financeiro:relatorio_financeiro' %}" class="btn btn-secondary">
+                        <i class="fas fa-redo me-1"></i> Limpar Filtros
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    ---
+
+    <div class="row">
+        {# Cartão de Contas a Pagar Pendentes / Vencidas #}
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Contas a Pagar (Pendentes / Vencidas)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                                <span class="text-warning">A Pagar: R$ {{ total_a_pagar_pendente_exibido|floatformat:2|format_currency_br }}</span><br>
+                                <span class="text-danger">Vencidas: R$ {{ total_a_pagar_vencidas_exibido|floatformat:2|format_currency_br }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-bill-wave-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Cartão de Contas a Receber Pendentes / Vencidas #}
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Contas a Receber (Pendentes / Vencidas)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                                <span class="text-info">A Receber: R$ {{ total_a_receber_pendente_exibido|floatformat:2|format_currency_br }}</span><br>
+                                <span class="text-danger">Vencidas: R$ {{ total_a_receber_vencidas_exibido|floatformat:2|format_currency_br }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hand-holding-usd fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Cartão de Total Pago no Período #}
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Pago no Período (Data Pagamento)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                                R$ {{ total_pago_no_periodo|floatformat:2|format_currency_br }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-check-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Cartão de Total Recebido no Período #}
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Recebido no Período (Data Recebimento)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                                R$ {{ total_recebido_no_periodo|floatformat:2|format_currency_br }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-wallet fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Cartão de Saldo Projetado Geral #}
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card {% if saldo_projetado_geral >= 0 %}border-left-success{% else %}border-left-danger{% endif %} shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Saldo Projetado Geral
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                                R$ {{ saldo_projetado_geral|floatformat:2|format_currency_br }}
+                            </div>
+                            <div class="text-xs text-muted mt-1">
+                                <small>(Contas A Receber - Contas A Pagar)</small>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Cartão de Saldo Realizado Geral #}
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card {% if saldo_realizado_geral >= 0 %}border-left-success{% else %}border-left-danger{% endif %} shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Saldo Realizado Geral
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                                R$ {{ saldo_realizado_geral|floatformat:2|format_currency_br }}
+                            </div>
+                            <div class="text-xs text-muted mt-1">
+                                <small>(Contas Recebidas - Contas Pagas)</small>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    ---
+
+    {# Tabela de Contas a Pagar Filtradas #}
+    {% if contas_pagar %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Contas a Pagar</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTableContasPagar" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Vencimento</th>
+                            <th>Status</th>
+                            <th>Fornecedor</th>
+                            <th>Categoria</th>
+                            <th>Reg. Por</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conta in contas_pagar %}
+                        <tr>
+                            <td>{{ conta.descricao }}</td>
+                            {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                            <td>R$ {{ conta.valor|floatformat:2|format_currency_br }}</td>
+                            <td>{{ conta.data_vencimento|date:"d/m/Y" }}</td>
+                            <td><span class="badge {{ conta.badge_class }}">{{ conta.display_status_text }}</span></td>
+                            <td>{{ conta.fornecedor.razao_social|default:"N/A" }}</td>
+                            <td>{{ conta.categoria.nome|default:"N/A" }}</td>
+                            <td>{{ conta.registrado_por.username|default:"N/A" }}</td>
+                            <td>
+                                <a href="{% url 'financeiro:detalhar_conta_pagar' conta.pk %}" class="btn btn-info btn-sm" title="Detalhes"><i class="fas fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif form.is_valid and form.cleaned_data.tipo_conta != 'receber' %}
+    <div class="alert alert-info text-center" role="alert">
+        Nenhuma conta a pagar encontrada com os filtros aplicados.
+    </div>
+    {% endif %}
+
+
+    {# Tabela de Contas a Receber Filtradas #}
+    {% if contas_receber %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Contas a Receber</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTableContasReceber" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Vencimento</th>
+                            <th>Status</th>
+                            <th>Cliente</th>
+                            <th>Categoria</th>
+                            <th>Reg. Por</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conta in contas_receber %}
+                        <tr>
+                            <td>{{ conta.descricao }}</td>
+                            {# ALTERADO AQUI: replace_decimal para format_currency_br #}
+                            <td>R$ {{ conta.valor|floatformat:2|format_currency_br }}</td>
+                            <td>{{ conta.data_vencimento|date:"d/m/Y" }}</td>
+                            <td><span class="badge {{ conta.badge_class }}">{{ conta.display_status_text }}</span></td>
+                            <td>{{ conta.cliente.razao_social|default:"N/A" }}</td>
+                            <td>{{ conta.categoria.nome|default:"N/A" }}</td>
+                            <td>{{ conta.registrado_por.username|default:"N/A" }}</td>
+                            <td>
+                                <a href="{% url 'financeiro:detalhar_conta_receber' conta.pk %}" class="btn btn-info btn-sm" title="Detalhes"><i class="fas fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif form.is_valid and form.cleaned_data.tipo_conta != 'pagar' %}
+    <div class="alert alert-info text-center" role="alert">
+        Nenhuma conta a receber encontrada com os filtros aplicados.
+    </div>
+    {% endif %}
+
+    {% if not contas_pagar and not contas_receber and not form.is_valid %}
+    <div class="alert alert-info text-center" role="alert">
+        Use os filtros acima para gerar o relatório financeiro.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Opcional: Adicione aqui scripts para DataTables ou outros JS para a tabela #}
+{# Exemplo: #}
+{# <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script> #}
+{# <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script> #}
+{# <script> #}
+{#     $(document).ready(function() { #}
+{#         $('#dataTableContasPagar').DataTable(); #}
+{#         $('#dataTableContasReceber').DataTable(); #}
+{#     }); #}
+{# </script> #}
+{% endblock %}

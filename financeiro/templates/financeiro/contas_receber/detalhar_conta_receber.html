@@ -1,0 +1,123 @@
+<!-- financeiro/templates/financeiro/contas_receber/detalhar_conta_receber.html -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ title }}</h2>
+    <hr>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            Detalhes da Conta a Receber
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Descrição:</strong> {{ conta.descricao }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Cliente:</strong> {{ conta.cliente.razao_social }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Valor:</strong> R$ {{ conta.valor|stringformat:".2f" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Status:</strong> <span class="badge {{ conta.badge_class }}">{{ conta.display_status_text }}</span>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Data de Lançamento:</strong> {{ conta.data_lancamento|date:"d/m/Y" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Data de Vencimento:</strong> {{ conta.data_vencimento|date:"d/m/Y" }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Data de Recebimento:</strong> 
+                    {% if conta.data_recebimento %}
+                        {{ conta.data_recebimento|date:"d/m/Y" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <strong>Categoria:</strong> {{ conta.categoria.nome }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Forma de Recebimento:</strong> {{ conta.forma_pagamento.nome }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Registrado por:</strong> {{ conta.registrado_por.get_full_name|default:conta.registrado_por.username }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <strong>Observações:</strong> {{ conta.observacoes|default:"Nenhuma." }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Data de Registro:</strong> {{ conta.data_registro|date:"d/m/Y H:i" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Última Atualização:</strong> {{ conta.data_ultima_atualizacao|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+            <a href="{% url 'financeiro:lista_contas_receber' %}" class="btn btn-secondary me-2">Voltar à Lista</a>
+            
+            {% if conta.status not in statuses_nao_editaveis %}
+                <a href="{% url 'financeiro:editar_conta_receber' conta.pk %}" class="btn btn-warning me-2">Editar</a>
+                <a href="{% url 'financeiro:baixar_conta_receber' conta.pk %}" class="btn btn-success me-2">Baixar Conta</a>
+            {% endif %}
+
+            {# Botão de Excluir com modal de confirmação #}
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">
+                Excluir
+            </button>
+        </div>
+    </div>
+</div>
+
+{# Modal de Confirmação de Exclusão #}
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir a conta a receber "{{ conta.descricao }}"? Esta ação é irreversível.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{% url 'financeiro:excluir_conta_receber' conta.pk %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

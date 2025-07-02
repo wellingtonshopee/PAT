@@ -1,0 +1,386 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema Administrativo{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {# Link para Font Awesome para os ícones #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+            flex-shrink: 0;
+            transition: width 0.3s ease-in-out;
+            position: fixed; /* Fixa o sidebar na tela */
+            height: 100%; /* Ocupa a altura total */
+            z-index: 1000; /* Garante que fique acima de outros elementos */
+
+            /* --- AJUSTE PARA SCROLL NO SIDEBAR (MANTIDO) --- */
+            overflow-y: auto;
+            /* --- FIM DO AJUSTE --- */
+
+            /* NOVO: Esconde o sidebar por padrão em todas as telas */
+            left: -250px; /* Esconde para fora da tela */
+            width: 0; /* Começa com largura zero para o visual de "recolhido" */
+            padding-top: 0; /* Remove padding inicial */
+            overflow: hidden; /* Esconde conteúdo extra */
+        }
+
+        /* NOVO: Estilo para quando o sidebar está VISÍVEL (não collapsed) */
+        .sidebar:not(.collapsed) {
+            left: 0;
+            width: 250px; /* Largura total quando visível */
+            padding-top: 20px; /* Restaura o padding */
+            overflow: auto; /* Restaura o overflow */
+        }
+
+        .sidebar .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 10px 0;
+        }
+        .sidebar .logo-container img {
+            max-width: 150px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+
+            border-radius: 10px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+
+            padding: 5px;
+        }
+        .sidebar .logo-container h5 {
+            margin-top: 10px;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 10px 20px;
+            white-space: nowrap;
+        }
+        .sidebar .nav-link.active,
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: #007bff;
+            border-radius: 5px;
+        }
+
+        /* Estilos para os sub-itens do menu (dropdown) */
+        .sidebar .collapse .nav-link {
+            padding-left: 40px; /* Recuo para sub-itens */
+            font-size: 0.95em;
+        }
+        .sidebar .collapse.show .nav-link.active,
+        .sidebar .collapse.show .nav-link:hover {
+            background-color: #0056b3; /* Cor de fundo para sub-itens ativos/hover */
+        }
+
+        .sidebar .nav-item .logout-btn {
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+            white-space: normal;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            transition: margin-left 0.3s ease-in-out;
+            /* Removido o margin-left inicial de 250px aqui */
+            margin-left: 0; /* NOVO: Sempre começa com 0 de margem */
+        }
+
+        /* NOVO: Adiciona margem ao main-content quando o sidebar está visível */
+        .main-content.sidebar-visible {
+            margin-left: 250px;
+        }
+
+        .navbar-top {
+            background-color: #ffffff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .navbar-top .user-info {
+            font-weight: bold;
+        }
+        .toggle-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        /* AJUSTE FEITO AQUI: OVERLAY TOTALMENTE TRANSPARENTE */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0); /* MUDANÇA AQUI: Defina a transparência para 0 */
+            z-index: 999;
+            display: none;
+        }
+        /* As regras a seguir para o overlay não foram alteradas, mas são importantes para seu funcionamento */
+        .sidebar.collapsed + .overlay {
+            display: none;
+        }
+        .sidebar:not(.collapsed) + .overlay {
+            display: block;
+        }
+
+        /* Responsividade para telas menores: sidebar começa recolhido e mostra/esconde com o left */
+        @media (max-width: 768px) {
+            .sidebar {
+                left: -250px; /* Escondido por padrão */
+                width: 250px; /* Largura normal para mobile */
+                padding-top: 20px; /* Padding normal para mobile */
+                overflow: auto; /* Overflow normal para mobile */
+            }
+            .sidebar:not(.collapsed) {
+                left: 0; /* Mostra ao expandir */
+            }
+            .main-content {
+                margin-left: 0; /* Sempre 0 em telas pequenas */
+            }
+            .main-content.sidebar-visible {
+                margin-left: 0; /* Não adiciona margem em telas pequenas */
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %} {# NOVO: Bloco para incluir CSS ou JS na tag head #}
+
+</head>
+<body>
+    <div class="sidebar collapsed" id="sidebar"> {# Adicionado 'collapsed' aqui por padrão #}
+        <div class="logo-container">
+            <img src="{% static 'logop.png' %}" alt="Logo do Sistema">
+            <h5>Sistema Web - HUB</h5> {# Alterado aqui #}
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'home' %}active{% endif %}" href="{% url 'usuarios:home' %}"><i class="fas fa-home me-2"></i>Dashboard</a>
+            </li>
+            <li class="nav-item"> {# NOVO: Link para Clientes #}
+                <a class="nav-link {% if active_page == 'clientes' %}active{% endif %}" href="{% url 'listar_clientes' %}">
+                    <i class="fas fa-users-cog me-2"></i> Clientes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'estoque_list' %}active{% endif %}" href="{% url 'listar_itens_estoque' %}"><i class="fas fa-boxes me-2"></i>Controle de Estoque</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'patrimonio' %}active{% endif %}" href="{% url 'patrimonio:listar_itens_patrimonio' %}">
+                    <i class="fas fa-building me-2"></i> Patrimônio
+                </a>
+            </li>
+            <li class="nav-item"> {# NOVO: Link para Coleta de Inventário #}
+                <a class="nav-link {% if active_page == 'coleta_inventario' %}active{% endif %}" href="{% url 'patrimonio:coleta_inventario' %}">
+                    <i class="fas fa-barcode me-2"></i> Coleta Inventário
+                </a>
+            </li>
+            <li class="nav-item"> {# NOVO: Link para o Relatório de Inventário #}
+                <a class="nav-link {% if active_page == 'relatorio_inventario_conferencia' %}active{% endif %}" href="{% url 'patrimonio:relatorio_inventario_conferencia' %}">
+                    <i class="fas fa-clipboard-check me-2"></i> Rel. Inventário
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'fornecedores' %}active{% endif %}" href="{% url 'listar_fornecedores' %}">
+                    <i class="fas fa-truck me-2"></i> Fornecedores
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'epis' %}active{% endif %}" href="{% url 'listar_epis' %}">
+                    <i class="fas fa-hard-hat me-2"></i> Controle de EPIs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'tipos_epi' %}active{% endif %}" href="{% url 'listar_tipos_epi' %}">
+                    <i class="fas fa-tags me-2"></i> Tipos de EPI
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'colaboradores' %}active{% endif %}" href="{% url 'listar_colaboradores' %}">
+                    <i class="fas fa-users me-2"></i> Colaboradores
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'entradas_epi' %}active{% endif %}" href="{% url 'listar_entradas_epi' %}">
+                    <i class="fas fa-arrow-alt-circle-down me-2"></i> Entradas EPI
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'saidas_epi' %}active{% endif %}" href="{% url 'listar_saidas_epi' %}">
+                    <i class="fas fa-arrow-alt-circle-up me-2"></i> Saídas EPI
+                </a>
+            </li>
+            
+            {# NOVO: Item de menu com sub-links para Financeiro #}
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'financeiro_contas_pagar' or active_page == 'financeiro_contas_receber' or active_page == 'financeiro_relatorio' %}active{% endif %}"
+                   data-bs-toggle="collapse" href="#financeiroSubmenu" role="button" 
+                   aria-expanded="{% if active_page == 'financeiro_contas_pagar' or active_page == 'financeiro_contas_receber' or active_page == 'financeiro_relatorio' %}true{% else %}false{% endif %}"
+                   aria-controls="financeiroSubmenu">
+                    <i class="fas fa-dollar-sign me-2"></i> Controle Financeiro <i class="fas fa-chevron-down float-end"></i>
+                </a>
+                <div class="collapse {% if active_page == 'financeiro_contas_pagar' or active_page == 'financeiro_contas_receber' or active_page == 'financeiro_relatorio' %}show{% endif %}" id="financeiroSubmenu">
+                    <ul class="nav flex-column ps-3">
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'financeiro_contas_pagar' %}active{% endif %}" href="{% url 'financeiro:listar_contas_pagar' %}">
+                                Contas a Pagar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'financeiro_contas_receber' %}active{% endif %}" href="{% url 'financeiro:lista_contas_receber' %}">
+                                Contas a Receber
+                            </a>
+                        </li>
+                        {# NOVO: Link para o Relatório Financeiro #}
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'financeiro_relatorio' %}active{% endif %}" href="{% url 'financeiro:relatorio_financeiro' %}">
+                                Relatório Financeiro
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            {# FIM DO NOVO ITEM DE MENU #}
+
+           <li class="nav-item">
+        <a class="nav-link" href="{% url 'usuarios:log_atividades' %}">
+            <i class="fas fa-clipboard-list"></i> Log de Atividades
+        </a>
+    </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'cadastro_usuario' %}active{% endif %}" href="{% url 'usuarios:cadastro_usuario' %}"><i class="fas fa-user-cog me-2"></i>Usuários</a>
+            </li>
+            <li class="nav-item">
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link btn btn-link text-white-50 logout-btn" style="text-decoration: none; padding: 10px 20px;">
+                        <i class="fas fa-sign-out-alt me-2"></i> Sair
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <div class="overlay" id="sidebar-overlay"></div> {# Novo overlay #}
+
+    <div class="main-content" id="main-content">
+        <div class="navbar-top">
+            <button class="toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="system-name">
+                <h3>Sistema de Controle Interno do HUB!</h3> {# Alterado aqui #}
+            </div>
+            <div class="user-info">
+                Bem-vindo(a), {{ request.user.username }}!
+            </div>
+        </div>
+
+        <div class="container-fluid">
+         {% if messages %}
+    <div class="container-fluid mt-3"> {# Adiciona um container para o alerta e margem superior #}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+            // Função para alternar o estado do menu
+            function toggleSidebar() {
+                sidebar.classList.toggle('collapsed');
+                // Ajusta a margem do conteúdo principal apenas em telas maiores
+                if (window.innerWidth > 768) {
+                    mainContent.classList.toggle('sidebar-visible'); // Usa a nova classe
+                }
+                // Controla a visibilidade do overlay
+                if (sidebar.classList.contains('collapsed')) {
+                    sidebarOverlay.style.display = 'none';
+                } else {
+                    sidebarOverlay.style.display = 'block';
+                }
+            }
+
+            // Função para fechar o sidebar (usada pelo overlay)
+            function closeSidebar() {
+                if (!sidebar.classList.contains('collapsed')) {
+                    toggleSidebar();
+                }
+            }
+
+            // Adiciona o evento de clique ao botão
+            sidebarToggle.addEventListener('click', toggleSidebar);
+
+            // Adiciona o evento de clique ao overlay
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            // NÃO HÁ MAIS LÓGICA DE INICIALIZAÇÃO PARA DEIXAR O SIDEBAR ABERTO POR PADRÃO.
+            // Ele sempre começará com a classe 'collapsed' no HTML.
+            // A margem do main-content também começa em 0 no CSS.
+
+            // Adiciona ou remove 'sidebar-visible' no main-content ao redimensionar
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    if (!sidebar.classList.contains('collapsed')) {
+                        mainContent.classList.add('sidebar-visible');
+                    } else {
+                        mainContent.classList.remove('sidebar-visible');
+                    }
+                } else {
+                    mainContent.classList.remove('sidebar-visible'); // Em telas pequenas, nunca tem margem
+                }
+            });
+
+            // Força o estado inicial em telas grandes caso o JS seja muito rápido
+            // Isso garante que se o sidebar já está aberto (por erro ou refresh com estado), ele volte a ser recolhido
+            if (window.innerWidth > 768) {
+                if (!sidebar.classList.contains('collapsed')) {
+                    sidebar.classList.add('collapsed'); // Garante que comece recolhido
+                }
+                mainContent.classList.remove('sidebar-visible'); // Garante que a margem seja 0
+            }
+
+        });
+    </script>
+    {% block extra_js %}{% endblock %} {# NOVO: Bloco para incluir JS específico da página aqui #}
+</body>
+</html>

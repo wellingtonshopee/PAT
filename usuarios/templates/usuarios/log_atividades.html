@@ -1,0 +1,42 @@
+{% extends 'base.html' %} {# **ATENÇÃO:** Mantenha 'base.html' se este for seu template base global #}
+{% load static %}
+
+{% block title %}Log de Atividades - Sistema de Controle Interno do HUB{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h1 class="mb-4">Logs de Atividades</h1>
+    <p class="text-muted">Acompanhe todas as ações realizadas no sistema.</p>
+
+    {% if logs %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Descrição</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.data_hora|date:"d/m/Y H:i:s" }}</td>
+                    <td>{{ log.usuario.username|default:"Anônimo" }}</td>
+                    <td>{{ log.acao }}</td>
+                    <td>{{ log.descricao|default:"-" }}</td>
+                    <td>{{ log.ip_endereco|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        Nenhuma atividade registrada ainda.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

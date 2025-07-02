@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">{{ title }}</h2> {# Removido o mb-4 do h2 para melhor alinhamento #}
+        <a href="{% url 'patrimonio:exportar_inventario_conferencia_csv' %}" class="btn btn-primary">
+            <i class="fas fa-file-csv"></i> Exportar CSV
+        </a>
+    </div>
+
+    <p class="alert alert-info">
+        Este relatório compara itens coletados nos últimos **{{ dias_coleta }} dias** (a partir de {{ data_limite }} )
+        com todos os itens ATIVOS cadastrados.
+    </p>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    Itens Coletados Recentemente ({{ itens_coletados.count }})
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    {% if itens_coletados %}
+                    <ul class="list-group">
+                        {% for item in itens_coletados %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{% url 'patrimonio:detalhar_item_patrimonio' item.pk %}">{{ item.codigo_patrimonial }} - {{ item.nome }}</a>
+                            <span class="badge bg-success">Coletado</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Nenhum item foi coletado no período especificado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    Itens Cadastrados (Ativos) e NÃO Coletados ({{ itens_nao_coletados.count }})
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    {% if itens_nao_coletados %}
+                    <ul class="list-group">
+                        {% for item in itens_nao_coletados %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{% url 'patrimonio:detalhar_item_patrimonio' item.pk %}">{{ item.codigo_patrimonial }} - {{ item.nome }}</a>
+                            <span class="badge bg-danger">Não Coletado</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Todos os itens ativos foram coletados no período especificado!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        
+        <a href="{% url 'patrimonio:relatorio_inventario_conferencia' %}" class="btn btn-secondary">Atualizar Relatório</a>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+<!-- epi/templates/epi/saida_epi_pdf_template.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprovante de Entrega de EPI</title>
+    <style>
+        /* Define o tamanho da página como A4 e as margens */
+        @page {
+            size: A4; /* Define o tamanho da folha como A4 */
+            margin: 2cm; /* Define as margens da página */
+        }
+
+        body { 
+            font-family: sans-serif; 
+            margin: 0; /* Margens controladas por @page */
+            padding: 0;
+        }
+        h1 { 
+            text-align: center; 
+            color: #333; 
+            margin-bottom: 20px;
+        }
+        .info-item { 
+            margin-bottom: 10px; 
+            line-height: 1.5;
+        }
+        .info-item strong { 
+            display: inline-block; 
+            width: 150px; /* Aumentado para melhor alinhamento */
+            font-weight: bold;
+        }
+        .signature-area { 
+            margin-top: 50px; 
+            text-align: center; 
+            border-top: 1px solid #ccc; /* Linha divisória */
+            padding-top: 10px;
+        }
+        .signature-image { 
+            max-width: 300px; 
+            height: auto; 
+            border: 1px solid #ccc; 
+            background-color: #f8f9fa;
+            padding: 5px;
+            display: block; /* Garante que a imagem ocupe sua própria linha */
+            margin: 10px auto; /* Centraliza a imagem */
+        }
+        .footer { 
+            margin-top: 50px; 
+            text-align: center; 
+            font-size: 0.8em; 
+            color: #777; 
+            border-top: 1px solid #eee; /* Linha no rodapé */
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comprovante de Entrega de EPI</h1>
+
+    <div class="info-section">
+        <div class="info-item"><strong>Colaborador:</strong> {{ colaborador_nome_display }} ({{ colaborador_cpf_display }})</div>
+        <div class="info-item"><strong>EPI:</strong> {{ epi_nome_display }} (CA: {{ ca_epi_display }})</div>
+        <div class="info-item"><strong>Quantidade:</strong> {{ quantidade }}</div>
+        <div class="info-item"><strong>Data da Saída:</strong> {{ data_saida }}</div>
+        <div class="info-item"><strong>Observações:</strong> {{ observacoes }}</div>
+    </div>
+
+    {% if assinatura_digital_base64 %}
+    <div class="signature-area">
+        <p>Assinatura do Colaborador:</p>
+        {# A URL da imagem da assinatura será carregada aqui. #}
+        {# xhtml2pdf precisa que a URL seja acessível ou que seja uma imagem base64. #}
+        {# Se o ImageField do Django salva para um caminho no servidor, a URL via MEDIA_URL é usada. #}
+        {# Se você decidiu armazenar a string base64 diretamente, o 'src' já a reconhece. #}
+        <img src="{{ assinatura_digital_base64 }}" class="signature-image" alt="Assinatura Digital">
+        <p>______________________________________</p>
+        <p>Colaborador</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Documento gerado automaticamente em {{ "now"|date:"d/m/Y H:i" }}</p>
+        <p>Sistema de Gestão de EPIs</p>
+    </div>
+</body>
+</html>

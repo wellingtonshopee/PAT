@@ -1,0 +1,16 @@
+{% extends 'base.html' %} {# Altere 'base.html' para o seu template base, se tiver um #}
+
+{% block content %}
+    <div class="container mt-4">
+        <h2>{{ title }}</h2>
+        <div class="alert alert-danger" role="alert">
+            <p>Você tem certeza que deseja excluir o cliente <strong>{{ cliente.razao_social }}</strong>?</p>
+            <p>Esta ação é irreversível.</p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+            <a href="{% url 'detalhar_cliente' cliente.pk %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+{% endblock content %}

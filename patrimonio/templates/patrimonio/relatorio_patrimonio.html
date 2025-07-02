@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}Relatório de Patrimônio{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Estilos para Impressão */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printable-area, #printable-area * {
+            visibility: visible;
+        }
+        #printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20mm;
+        }
+        #printable-area table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #printable-area th, #printable-area td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        #printable-area thead {
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            background-color: #343a40;
+            color: #fff;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 no-print">Relatório de Patrimônio</h2>
+
+    <div class="card mb-4 shadow-sm no-print">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtros para o Relatório</h5>
+        </div>
+        <div class="card-body">
+            {# O action do formulário de filtro deve ser a própria URL do relatório #}
+            {# AQUI ESTÁ A MUDANÇA: adicionando 'patrimonio:' #}
+            <form method="get" class="row g-3 align-items-end" action="{% url 'patrimonio:gerar_relatorio_patrimonio' %}">
+                <div class="col-md-3">
+                    {{ filter_form.search_query|crispy }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.categoria|crispy }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.localizacao|crispy }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.estado_conservacao|crispy }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.status|crispy }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter_form.data_aquisicao_inicio|crispy }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter_form.data_aquisicao_fim|crispy }}
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                    {# AQUI ESTÁ A MUDANÇA: adicionando 'patrimonio:' #}
+                    <a href="{% url 'patrimonio:gerar_relatorio_patrimonio' %}" class="btn btn-outline-secondary">Limpar Filtros</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="printable-area">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Itens Encontrados</h4>
+            <div class="btn-group no-print" role="group" aria-label="Ações do Relatório">
+                {# Botão de Imprimir #}
+                <button class="btn btn-info" onclick="window.print()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                {# Botão para Exportar CSV #}
+                {# AQUI ESTÁ A MUDANÇA: adicionando 'patrimonio:' #}
+                <a href="{% url 'patrimonio:exportar_patrimonio_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                    <i class="fas fa-file-csv"></i> Exportar CSV
+                </a>
+                {# Botão para Exportar Excel (XLSX) #}
+                {# AQUI ESTÁ A MUDANÇA: adicionando 'patrimonio:' #}
+                <a href="{% url 'patrimonio:exportar_patrimonio_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </a>
+            </div>
+        </div>
+
+        {% if itens_patrimonio %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Categoria</th>
+                        <th>Localização</th>
+                        <th>Responsável</th>
+                        <th>Status</th>
+                        <th>Estado</th>
+                        <th>Data Aquisição</th>
+                        <th>Valor (R$)</th>
+                        <th>Última Atualização</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens_patrimonio %}
+                    <tr>
+                        <td>{{ item.codigo_patrimonial }}</td>
+                        <td>{{ item.nome }}</td>
+                        <td>{{ item.categoria.nome|default:"-" }}</td>
+                        <td>{{ item.localizacao.nome|default:"-" }}</td>
+                        <td>{{ item.responsavel_atual.get_full_name|default:item.responsavel_atual.username|default:"-" }}</td>
+                        <td>
+                            <span class="badge
+                                {% if item.status == 'ATIVO' %}text-bg-success
+                                {% elif item.status == 'BAIXADO' %}text-bg-danger
+                                {% elif item.status == 'TRANSFERIDO' %}text-bg-info
+                                {% else %}text-bg-secondary{% endif %}">
+                                {{ item.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ item.get_estado_conservacao_display }}</td>
+                        <td>{{ item.data_aquisicao|date:"d/m/Y" }}</td>
+                        <td>R$ {{ item.valor_aquisicao|floatformat:2|intcomma }}</td>
+                        <td>{{ item.data_ultima_atualizacao|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning" role="alert">
+            Nenhum item de patrimônio encontrado com os filtros aplicados.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="mt-3 no-print">
+        {# AQUI ESTÁ A MUDANÇA: adicionando 'patrimonio:' #}
+        <a href="{% url 'patrimonio:listar_itens_patrimonio' %}" class="btn btn-primary">Voltar para a Lista de Patrimônios</a>
+    </div>
+</div>
+{% endblock %}

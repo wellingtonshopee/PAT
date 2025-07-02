@@ -1,0 +1,237 @@
+{# pat/epi/templates/epi/adicionar_saida_epi.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Registrar Saída de EPI{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Registrar Nova Saída de EPI</h1>
+
+    <div class="card p-4 shadow-sm">
+        <form method="post" id="saidaEPIForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                {# Bloco para o campo de Assinatura Digital #}
+                {% if field.name == 'assinatura_digital' %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        <div class="signature-pad-container border rounded p-2 bg-light">
+                            <canvas id="signatureCanvas" class="border border-secondary rounded" style="width: 100%; height: 200px; touch-action: none;"></canvas>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" id="clearSignature" class="btn btn-warning btn-sm me-2">Limpar Assinatura</button>
+                            {# Botão para Gerar PDF - Inicialmente oculto, aparece após a assinatura #}
+                            <button type="button" id="generatePdfBtn" class="btn btn-info btn-sm" style="display: none;">Gerar e Anexar PDF</button>
+                            {# NOVO: Botão para Imprimir - Inicialmente oculto, aparece após a assinatura #}
+                            <button type="button" id="printButton" class="btn btn-secondary btn-sm ms-2" style="display: none;">Imprimir Registro</button>
+                        </div>
+                        {# Campo hidden para armazenar os dados da assinatura (base64) #}
+                        <input type="hidden" name="{{ field.name }}" id="id_{{ field.name }}" value="{{ field.value|default_if_none:'' }}">
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {# Bloco para o campo de Documento PDF (FileField) #}
+                {% elif field.name == 'pdf_documento' %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {# Este input será preenchido via JavaScript quando o PDF for gerado #}
+                        {# Você pode adicionar 'style="display: none;"' aqui se não quiser que o usuário veja este campo de upload #}
+                        {% render_field field class="form-control" %}
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {# Tratamento especial para checkboxes #}
+                {% elif field.widget_type == 'checkbox' %}
+                    <div class="form-check mb-3">
+                        {% render_field field class="form-check-input" %}
+                        <label class="form-check-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {# Tratamento padrão para outros tipos de campo #}
+                {% else %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {% render_field field class="form-control" %}
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <button type="submit" class="btn btn-success mt-3">Registrar Saída</button>
+            <a href="{% url 'listar_saidas_epi' %}" class="btn btn-secondary mt-3 ms-2">Cancelar</a>
+        </form>
+    </div>
+
+    {# Incluir a biblioteca Signature Pad via CDN #}
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.0/dist/signature_pad.umd.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var canvas = document.getElementById('signatureCanvas');
+            if (!canvas) {
+                console.error('ERRO: Elemento canvas para assinatura não encontrado! Verifique o ID e o HTML.');
+                return;
+            }
+
+            function resizeCanvas() {
+                var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                signaturePad.clear();
+                // Opcional: esconder os botões PDF e Imprimir novamente ao redimensionar (se limpar a assinatura)
+                document.getElementById('generatePdfBtn').style.display = 'none'; 
+                document.getElementById('printButton').style.display = 'none'; 
+            }
+
+            var signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(248, 249, 250)',
+                penColor: 'rgb(0, 0, 0)'
+            });
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            var clearButton = document.getElementById('clearSignature');
+            if (clearButton) {
+                clearButton.addEventListener('click', function() {
+                    signaturePad.clear();
+                    document.getElementById('generatePdfBtn').style.display = 'none'; // Esconde o botão PDF ao limpar
+                    document.getElementById('printButton').style.display = 'none'; // Esconde o botão Imprimir
+                });
+            }
+
+            var signatureInputField = document.getElementById('id_assinatura_digital');
+            var generatePdfButton = document.getElementById('generatePdfBtn');
+            var printButton = document.getElementById('printButton'); // NOVO: Botão Imprimir
+            var pdfDocumentoField = document.getElementById('id_pdf_documento'); 
+
+            // Mostrar botões "Gerar PDF" e "Imprimir" apenas quando houver assinatura
+            signaturePad.onEnd = function() {
+                console.log('Assinatura finalizada.'); // DEBUG: Verifica se o evento está disparando
+                if (!signaturePad.isEmpty()) {
+                    generatePdfButton.style.display = 'inline-block';
+                    printButton.style.display = 'inline-block'; // NOVO: Mostra o botão Imprimir
+                }
+            };
+            // Opcional: Mostrar os botões também ao iniciar a assinatura, se preferir
+            // signaturePad.onBegin = function() {
+            //     if (signaturePad.isEmpty()) { // Só mostra se estava vazio
+            //         generatePdfButton.style.display = 'inline-block';
+            //         printButton.style.display = 'inline-block';
+            //     }
+            // };
+
+
+            // Lógica para o botão "Gerar PDF"
+            if (generatePdfButton) {
+                generatePdfButton.addEventListener('click', async function() {
+                    if (signaturePad.isEmpty()) {
+                        alert('Por favor, faça a assinatura antes de gerar o PDF.');
+                        return;
+                    }
+
+                    var dataURL = signaturePad.toDataURL('image/png');
+                    signatureInputField.value = dataURL; // Garante que a assinatura esteja no campo hidden
+
+                    // Coletar todos os dados do formulário para enviar ao backend para gerar o PDF
+                    const formData = new FormData(document.getElementById('saidaEPIForm'));
+                    
+                    // Adiciona a assinatura digital (base64) explicitamente ao FormData para a geração do PDF
+                    formData.set('assinatura_digital_base64', dataURL);
+
+                    // Exibir uma mensagem de carregamento
+                    alert('Gerando PDF... Por favor, aguarde.');
+
+                    // Envia os dados para a view Django para gerar o PDF
+                    try {
+                        const response = await fetch('{% url "gerar_pdf_saida_epi" %}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            },
+                            body: formData // Envia o formulário completo
+                        });
+
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const fileName = `saida_epi_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+                            // Criar um objeto File do blob para anexar ao campo de input do formulário
+                            const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+
+                            // Criar um DataTransfer para simular a seleção de arquivo
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(pdfFile);
+
+                            // Atribuir o DataTransfer ao campo de input 'pdf_documento'
+                            if (pdfDocumentoField) {
+                                pdfDocumentoField.files = dataTransfer.files;
+                                alert('PDF gerado e anexado com sucesso! Agora você pode clicar em "Registrar Saída" para salvar.');
+                            } else {
+                                console.warn('Campo para anexar PDF (id_pdf_documento) não encontrado. O PDF não foi anexado automaticamente.');
+                                // Opção alternativa: Forçar o download do PDF
+                                const downloadUrl = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = downloadUrl;
+                                a.download = fileName;
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
+                                window.URL.revokeObjectURL(downloadUrl);
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            alert('Erro ao gerar PDF: ' + errorText);
+                            console.error('Erro detalhado do servidor:', errorText);
+                        }
+                    } catch (error) {
+                        console.error('Erro na requisição para gerar PDF:', error);
+                        alert('Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.');
+                    }
+                });
+            }
+
+            // NOVO: Lógica para o botão "Imprimir Registro"
+            if (printButton) {
+                printButton.addEventListener('click', function() {
+                    window.print(); // Dispara o diálogo de impressão do navegador
+                });
+            }
+
+            // Quando o formulário principal for submetido
+            var formElement = document.getElementById('saidaEPIForm');
+            if (formElement) {
+                formElement.addEventListener('submit', function(event) {
+                    if (signaturePad.isEmpty()) {
+                        signatureInputField.value = ''; 
+                    } else {
+                        var dataURL = signaturePad.toDataURL('image/png');
+                        signatureInputField.value = dataURL;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

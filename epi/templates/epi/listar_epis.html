@@ -1,0 +1,114 @@
+{# pat/epi/templates/epi/listar_epis.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %} {# <--- ESSENCIAL PARA O RENDER_FIELD FUNCIONAR! #}
+
+{% block title %}Controle de EPIs{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">EPIs Cadastrados</h1>
+
+    {# Bloco do Formulário de Filtro #}
+    <div class="card mb-4 p-4 shadow-sm">
+        <h5 class="mb-3">Filtrar EPIs</h5>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="id_search_query" class="form-label">{{ filter_form.search_query.label }}</label>
+                {% render_field filter_form.search_query class="form-control" placeholder=filter_form.search_query.help_text %}
+                <div class="form-text text-muted">{{ filter_form.search_query.help_text }}</div>
+            </div>
+            <div class="col-md-3">
+                <label for="id_tipo_epi" class="form-label">{{ filter_form.tipo_epi.label }}</label>
+                {% render_field filter_form.tipo_epi class="form-select" %}
+            </div>
+            <div class="col-md-2">
+                <label for="id_ca_vencido" class="form-label">{{ filter_form.ca_vencido.label }}</label>
+                {% render_field filter_form.ca_vencido class="form-select" %}
+            </div>
+            <div class="col-md-1">
+                <label for="id_ativo" class="form-label">{{ filter_form.ativo.label }}</label>
+                {% render_field filter_form.ativo class="form-select" %}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark w-100 me-2">Filtrar</button>
+                <a href="{% url 'listar_epis' %}" class="btn btn-outline-secondary w-100">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    {# Links de Ação #}
+     <p class="mb-4">
+        <a href="{% url 'adicionar_epi' %}" class="btn btn-success me-2">Adicionar Novo EPI</a>
+        <a href="{% url 'listar_tipos_epi' %}" class="btn btn-info me-2">Gerenciar Tipos de EPI</a> {# <-- ALTERADO AQUI #}
+        <a href="{% url 'listar_colaboradores' %}" class="btn btn-secondary me-2">Gerenciar Colaboradores</a> {# <-- ALTERADO AQUI #}
+        <a href="{% url 'adicionar_saida_epi' %}" class="btn btn-primary">Registrar Saída de EPI</a> {# <-- ALTERADO AQUI #}
+        <a href="{% url 'listar_entradas_epi' %}" class="btn btn-dark ms-2">Ver Entradas de EPI</a> {# <-- ADICIONADO AQUI #}
+        <a href="{% url 'listar_saidas_epi' %}" class="btn btn-warning ms-2">Ver Saídas de EPI</a> {# <-- ADICIONADO AQUI #}
+    </p>
+
+    {# Tabela de EPIs #}
+    {% if epis %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome do EPI</th>
+                        <th>CA</th>
+                        <th>Tipo</th>
+                        <th>Fabricante</th>
+                        <th>Validade CA</th>
+                        <th>Estoque Atual</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for epi in epis %}
+                        <tr>
+                            <td>{{ epi.nome }}</td>
+                            <td>{{ epi.ca }}</td>
+                            <td>{{ epi.tipo_epi|default_if_none:"N/A" }}</td>
+                            <td>{{ epi.fabricante|default_if_none:"-" }}</td>
+                            <td>
+                                {% if epi.validade_ca %}
+                                    {{ epi.validade_ca|date:"d/m/Y" }}
+                                    {% if epi.ca_vencido %}
+                                        <span class="badge bg-danger ms-2">Vencido</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if epi.estoque_atual <= epi.estoque_minimo and epi.estoque_atual > 0 %}
+                                    <span class="badge bg-warning">{{ epi.estoque_atual }} (Mínimo)</span>
+                                {% elif epi.estoque_atual <= 0 %}
+                                    <span class="badge bg-danger">{{ epi.estoque_atual }} (Esgotado)</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ epi.estoque_atual }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if epi.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'editar_epi' epi.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_epi' epi.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir o EPI \\'{{ epi.nome }} ({{ epi.ca }})\\''?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum EPI encontrado com os critérios de filtro.
+        </div>
+    {% endif %}
+{% endblock %}

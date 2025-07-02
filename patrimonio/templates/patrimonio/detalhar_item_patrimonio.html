@@ -1,0 +1,42 @@
+{# patrimonio/templates/patrimonio/detalhar_item_patrimonio.html #}
+
+{% extends 'base.html' %}
+
+{% block title %}Detalhes do Item: {{ item.nome }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Detalhes do Item: {{ item.nome }}</h2>
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Código Patrimonial:</strong> {{ item.codigo_patrimonial }}</p>
+            <p><strong>Descrição:</strong> {{ item.descricao|default:"N/A" }}</p>
+            <p><strong>Localização Atual:</strong> {{ item.localizacao.nome|default:"N/A" }}</p> 
+            <p><strong>Categoria:</strong> {{ item.categoria.nome|default:"N/A" }}</p>
+            <p><strong>Valor:</strong> R$ {{ item.valor_aquisicao|floatformat:2|default:"0.00" }}</p> 
+            <p><strong>Data de Aquisição:</strong> {{ item.data_aquisicao|date:"d/m/Y" }}</p>
+            <p><strong>Status:</strong> {{ item.get_status_display }}</p>
+            <p><strong>Observações:</strong> {{ item.observacoes|default:"N/A" }}</p> {# Adicionado o campo Observações #}
+            <p><strong>Registrado Por:</strong> 
+                {% if item.usuario_registro %}
+                    {{ item.usuario_registro.get_full_name|default:item.usuario_registro.username }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
+            <p><strong>Data de Registro:</strong> {{ item.data_registro|date:"d/m/Y H:i"|default:"N/A" }}</p> {# Adicionado default para Data de Registro #}
+
+            ---
+            <h3>Código QR do Item</h3>
+            <img src="{% url 'patrimonio:gerar_qrcode_patrimonio' item.id %}" alt="QR Code do Item" style="width: 200px; height: 200px; border: 1px solid #ddd; padding: 5px;">
+            <p class="mt-2">Leia este QR Code para coletar informações em inventário.</p>
+        </div>
+    </div>
+    
+    <a href="{% url 'patrimonio:listar_movimentacoes' %}" class="btn btn-secondary mt-3">Voltar para Movimentações</a>
+    <a href="{% url 'patrimonio:listar_itens_patrimonio' %}" class="btn btn-info mt-3">Voltar para Itens de Patrimônio</a>
+    <a href="{% url 'patrimonio:editar_item_patrimonio' item.pk %}" class="btn btn-warning mt-3">Editar Item</a>
+    <a href="{% url 'patrimonio:transferir_item_patrimonio' item.pk %}" class="btn btn-primary mt-3">Transferir</a>
+    <a href="{% url 'patrimonio:baixar_item_patrimonio' item.pk %}" class="btn btn-danger mt-3">Dar Baixa</a>
+</div>
+{% endblock %}
