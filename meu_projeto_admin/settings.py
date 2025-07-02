@@ -32,9 +32,7 @@ SECRET_KEY = config('SECRET_KEY') # ADICIONE ESTA LINHA
 DEBUG = False # Mantenha como False para produção
 
 # ALtere para a URL do seu Render e adicione localhost para desenvolvimento
-ALLOWED_HOSTS = ['meu-projeto-pat.onrender.com', 'localhost', '127.0.0.1'] # ALtere 'meu-projeto-pat' para o nome exato do seu serviço no Render
-
-
+ALLOWED_HOSTS = ['pat-gmhm.onrender.com', 'localhost', '127.0.0.1'] # Corrigido para a URL do seu serviço
 # Application definition
 
 INSTALLED_APPS = [
