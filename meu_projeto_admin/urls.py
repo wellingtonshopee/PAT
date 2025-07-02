@@ -5,6 +5,8 @@ from django.urls import path, include
 from django.conf import settings # IMPORTANTE: Adicionado para acessar settings.DEBUG, MEDIA_URL, MEDIA_ROOT
 from django.conf.urls.static import static # IMPORTANTE: Adicionado para servir arquivos de mídia e estáticos em desenvolvimento
 from usuarios import views as usuarios_views
+# NOVIDADE: Importa a função temporária para reset de senha
+from usuarios.views import set_admin_password_temp_view 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -18,6 +20,9 @@ urlpatterns = [
     path('financeiro/', include('financeiro.urls', namespace='financeiro')),
     path('clientes/', include('clientes.urls')),
     path('usuarios/', include('usuarios.urls')), 
+
+    # NOVIDADE: URL TEMPORÁRIA PARA RESETAR SENHA - REMOVER APÓS O USO!
+    path('reset-admin-password-emergency/', set_admin_password_temp_view, name='reset_admin_password_emergency'),
 ]
 
 # IMPORTANTE: Configuração para servir arquivos de mídia (uploads) e estáticos
@@ -28,5 +33,3 @@ if settings.DEBUG:
     # Se você tiver STATICFILES_DIRS e quiser que o servidor de desenvolvimento sirva-os também
     # (além do STATIC_URL padrão que já é servido por django.contrib.staticfiles)
     # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) # Esta linha não é estritamente necessária se STATIC_ROOT estiver configurado corretamente, pois collectstatic move tudo para lá.
-
-    
