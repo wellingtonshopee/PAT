@@ -16,38 +16,76 @@
         .login-container {
             background-color: #ffffff;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            /* Borda levemente arredondada para o container */
+            border-radius: 12px; /* NOVIDADE: Aumentei um pouco para ficar mais visível */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); /* NOVIDADE: Sombra mais pronunciada para o container */
             width: 100%;
             max-width: 400px;
         }
         .login-container h2 {
             margin-bottom: 20px;
             text-align: center;
+            color: #343a40; /* NOVIDADE: Um tom de cinza mais escuro para o título */
         }
-        .logo-placeholder {
+        .logo-container { /* NOVIDADE: Renomeado de logo-placeholder para logo-container para clareza */
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px; /* NOVIDADE: Aumentei o espaçamento abaixo do logo */
         }
-        .logo-placeholder img {
-            max-width: 150px; /* Ajuste o tamanho do logo conforme necessário */
+        .logo-container img {
+            max-width: 180px; /* NOVIDADE: Ajuste o tamanho do logo conforme necessário */
             height: auto;
+            border-radius: 8px; /* NOVIDADE: Bordas arredondadas para a imagem do logo */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* NOVIDADE: Sombra sutil para o logo */
+            border: 1px solid #dee2e6; /* NOVIDADE: Borda sutil ao redor do logo */
+        }
+        /* NOVIDADE: Estilo para ajustar os campos de input */
+        .login-container .form-control {
+            width: 100%; /* Garante que os inputs ocupem a largura total disponível */
+            margin-bottom: 15px; /* Espaçamento entre os campos */
+            padding: 10px;
+            border-radius: 5px; /* Bordas levemente arredondadas para os inputs */
+            border: 1px solid #ced4da;
+        }
+        /* NOVIDADE: Remove margem extra dos parágrafos gerados pelo form.as_p */
+        .login-container p {
+            margin-bottom: 0;
+        }
+        /* NOVIDADE: Estilo para o botão de Entrar */
+        .login-container .btn-primary {
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            margin-top: 10px; /* Espaçamento acima do botão */
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="logo-placeholder">
-            <img src="https://via.placeholder.com/150x50?text=Sua+Logo" alt="Logo da Empresa">
-        </div>
+        <div class="logo-container"> <img src="{% static 'logop.png' %}" alt="Logo da Empresa"> </div>
         <h2>Acesso ao Sistema</h2>
         <form method="post">
             {% csrf_token %} {# Tag de segurança obrigatória do Django para formulários #}
-            {{ form.as_p }} {# Renderiza o formulário de login do Django como parágrafos #}
+            {% for field in form %} <div class="mb-3">
+                    {{ field.label_tag }}
+                    {{ field | add_class:'form-control' }}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger mt-3" role="alert">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            {% endif %}
             <button type="submit" class="btn btn-primary w-100">Entrar</button>
         </form>
-        {% if form.errors %}
-            <div class="alert alert-danger mt-3" role="alert">
+        {% if form.errors and not form.non_field_errors %} <div class="alert alert-danger mt-3" role="alert">
                 Seu nome de usuário e senha não corresponderam. Por favor, tente novamente.
             </div>
         {% endif %}
