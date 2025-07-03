@@ -14,27 +14,31 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-from decouple import config
+# Importações ajustadas para usar Config e RepositoryEnv do decouple
+from decouple import Config, RepositoryEnv
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Força a leitura do arquivo .env no BASE_DIR
+env_path = os.path.join(BASE_DIR, '.env')
+config = Config(RepositoryEnv(env_path))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-+87td)_3hi3@7sk@p%1%-udgo6s+i_%p22_ouu(w%w&u6*+dp2'
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False # Mantenha como False para produção
+# Agora lê do .env e converte para booleano
+DEBUG = config('DEBUG', default=False, cast=bool) 
 
-# ALtere para a URL do seu Render e adicione localhost para desenvolvimento
-ALLOWED_HOSTS = ['pat-gmhm.onrender.com', 'localhost', '127.0.0.1']
+# Lê do .env e divide por vírgula. Use ALLOWED_HOSTS="pat-gmhm.onrender.com,localhost,127.0.0.1" no seu .env
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -92,10 +96,7 @@ WSGI_APPLICATION = 'meu_projeto_admin.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL'), # Lendo a URL da variável de ambiente DATABASE_URL no .env
-        conn_max_age=600
-    )
+    'default': dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
 }
 
 
