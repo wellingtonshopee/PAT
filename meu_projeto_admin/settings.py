@@ -32,11 +32,15 @@ config = Config(RepositoryEnv(env_path))
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+<<<<<<< HEAD
 # Agora lê do .env e converte para booleano
 DEBUG = config('DEBUG', default=False, cast=bool) 
 
 # Lê do .env e divide por vírgula. Use ALLOWED_HOSTS="pat-gmhm.onrender.com,localhost,127.0.0.1" no seu .env
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+=======
+DEBUG = True # Mantenha como False para produção
+>>>>>>> e74996f2131cea466bd980dbf2bf84dee7a7517d
 
 # Application definition
 INSTALLED_APPS = [
