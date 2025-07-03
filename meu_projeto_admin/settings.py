@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False # Mantenha como False para produção
+DEBUG = True # Mantenha como False para produção
 
 # ALtere para a URL do seu Render e adicione localhost para desenvolvimento
 ALLOWED_HOSTS = ['pat-gmhm.onrender.com', 'localhost', '127.0.0.1']
