@@ -14,8 +14,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-from decouple import config # ADICIONE ESTA LINHA
-import dj_database_url # ADICIONE ESTA LINHA
+from decouple import config
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,14 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-+87td)_3hi3@7sk@p%1%-udgo6s+i_%p22_ouu(w%w&u6*+dp2' # COMENTE OU REMOVA ESTA LINHA
-SECRET_KEY = config('SECRET_KEY') # ADICIONE ESTA LINHA
+# SECRET_KEY = 'django-insecure-+87td)_3hi3@7sk@p%1%-udgo6s+i_%p22_ouu(w%w&u6*+dp2'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False # Mantenha como False para produção
 
 # ALtere para a URL do seu Render e adicione localhost para desenvolvimento
-ALLOWED_HOSTS = ['pat-gmhm.onrender.com', 'localhost', '127.0.0.1'] # Corrigido para a URL do seu serviço
+ALLOWED_HOSTS = ['pat-gmhm.onrender.com', 'localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'estoque',
     'patrimonio',
     'fornecedores',
-    'clientes', 
+    'clientes',
     'epi',
     'crispy_forms',
     'crispy_bootstrap5',
@@ -57,7 +57,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware', # ADICIONE ESTA LINHA AQUI, NO TOPO
+    'whitenoise.middleware.WhiteNoiseMiddleware', # ADICIONADO AQUI, NO TOPO
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -76,7 +76,7 @@ TEMPLATES = [
         'APP_DIRS': True, # Permite que o Django procure templates dentro das pastas 'templates' de cada app
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug', # Adicionado para auxiliar no debug
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -93,8 +93,8 @@ WSGI_APPLICATION = 'meu_projeto_admin.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3', # Fallback para uso local com SQLite
-        conn_max_age=600  # Opcional: tempo máximo de conexão
+        default=config('DATABASE_URL'), # Lendo a URL da variável de ambiente DATABASE_URL no .env
+        conn_max_age=600
     )
 }
 
@@ -127,11 +127,11 @@ USE_I18N = True
 USE_TZ = True
 
 # --- Configurações de Localização (L10N) para o Brasil ---
-USE_L10N = True # Garante que formatos localizados serão usados
-DECIMAL_SEPARATOR = ',' # Usa vírgula como separador decimal
-USE_THOUSAND_SEPARATORS = True # Habilita separadores de milhares
-THOUSAND_SEPARATOR = '.' # Usa ponto como separador de milhares
-NUMBER_GROUPING = (3, 0) # Agrupamento de números: (3, 0) para 1.000.000 (grupos de 3 dígitos)
+USE_L10N = True
+DECIMAL_SEPARATOR = ','
+USE_THOUSAND_SEPARATORS = True
+THOUSAND_SEPARATOR = '.'
+NUMBER_GROUPING = (3, 0)
 # --------------------------------------------------------
 
 
@@ -151,12 +151,12 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Adicione esta linha para configurar o Whitenoise
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' # ADICIONE ESTA LINHA
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # --- Configurações para arquivos de Mídia (uploads de usuários, como PDFs e assinaturas) ---
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # Onde os arquivos de mídia serão salvos fisicamente
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # -----------------------------------------------------------------------------------------
 
 
