@@ -33,21 +33,19 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool) # Lê do .env e converte para booleano
 
-# --- Configuração de ALLOWED_HOSTS para desenvolvimento e produção ---
+# --- AJUSTE AQUI: ALLOWED_HOSTS para testes ---
+# Esta configuração permite que seu aplicativo responda a requisições de qualquer host
+# quando DEBUG está False (em produção).
+# É útil para ambientes de TESTE ou DESENVOLVIMENTO em plataformas como Render
+# onde o hostname pode não ser fixo ou é difícil de configurar.
+# !!! ATENÇÃO: PARA PRODUÇÃO REAL, ISSO NÃO É RECOMENDADO POR RAZÕES DE SEGURANÇA.
+# Em produção, você deve listar explicitamente os domínios permitidos.
 if DEBUG:
-    # Em desenvolvimento, permite localhost e 127.0.0.1
+    # Em desenvolvimento local, permite localhost e 127.0.0.1
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 else:
-    # Em produção, lê os hosts permitidos de uma variável de ambiente.
-    # Ex: No Render, defina DJANGO_ALLOWED_HOSTS = 'pat-gmhm.onrender.com'
-    # Se não definida, ou se vazia, o padrão '*, o * permite qualquer host (menos seguro, mas funcional em alguns PaaS).
-    allowed_hosts_str = config('DJANGO_ALLOWED_HOSTS', default='')
-    if allowed_hosts_str:
-        ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
-    else:
-        # Fallback para '*' se DJANGO_ALLOWED_HOSTS não for definido ou estiver vazio.
-        # Idealmente, você sempre especificaria o host no Render.
-        ALLOWED_HOSTS = ['*']
+    # Em ambiente de produção (quando DEBUG=False), permite qualquer host.
+    ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
