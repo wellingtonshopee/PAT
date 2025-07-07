@@ -1,4 +1,3 @@
-# meu_projeto_admin/settings.py
 """
 Django settings for meu_projeto_admin project.
 
@@ -13,23 +12,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-# Importações ajustadas para usar config do decouple
-from decouple import config # Removemos RepositoryEnv daqui, não será mais importado diretamente
+# Importações ajustadas para usar Config e RepositoryEnv do decouple
+from decouple import Config, RepositoryEnv
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- INÍCIO DA SEÇÃO AJUSTADA PARA DECOUPLE ---
-# Configura o decouple para procurar o .env a partir do BASE_DIR.
-# A função `config` (minúscula) será então capaz de ler as variáveis.
-# Não precisamos instanciar `Config` ou `RepositoryEnv` diretamente aqui,
-# a função `config` já gerencia isso internamente quando configurada.
-# Certifique-se de que seu .env está em C:\Users\SEAOps\Documents\pat\.env
-# e que a linha "config = config(RepositoryEnv(env_path))" foi REMOVIDA.
-# A função `config` importada do `decouple` fará a busca automaticamente
-# ou usará as variáveis de ambiente do sistema.
-# --- FIM DA SEÇÃO AJUSTADA PARA DECOUPLE ---
+# Força a leitura do arquivo .env no BASE_DIR
+env_path = os.path.join(BASE_DIR, '.env')
+config = Config(RepositoryEnv(env_path))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -40,12 +32,20 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool) # Agora lê do .env e converte para booleano
 
+# --- AJUSTE AQUI: ALLOWED_HOSTS ---
+# Sempre inclua localhost e 127.0.0.1 para desenvolvimento.
+# Em produção, o Render ou outros serviços de hospedagem podem precisar de '*'
+# ou de nomes de host explícitos (ex: seu_app.onrender.com).
+# Usar o .env para gerenciar isso é mais flexível.
 if DEBUG:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 else:
-    # Em produção, aceita qualquer host para evitar problemas com Render
-    # O Render já garante a segurança através do seu proxy reverso
-    ALLOWED_HOSTS = ['*']
+    # Em produção, tente ler de uma variável de ambiente para ser explícito e seguro.
+    # Se DJANGO_ALLOWED_HOSTS não estiver definido, então use ['*'] como fallback
+    # (mas é melhor definir explicitamente no Render).
+    # Ex: no Render, defina uma variável de ambiente DJANGO_ALLOWED_HOSTS = 'pat-gmhm.onrender.com'
+    allowed_hosts_str = config('DJANGO_ALLOWED_HOSTS', default='*')
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
 
 # Application definition
 INSTALLED_APPS = [
@@ -71,7 +71,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # ADICIONADO AQUI, NO TOPO, PARA SERVIR ESTÁTICOS EM PRODUÇÃO
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -79,7 +79,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'usuarios.middleware.RequestLogMiddleware', # <--- AJUSTADO AQUI!
+    # --- NOVIDADE: Adicionado o Middleware de Log de Atividades ---
+    'usuarios.middleware.LogAtividadeMiddleware',
+    # -------------------------------------------------------------
 ]
 
 ROOT_URLCONF = 'meu_projeto_admin.urls'
@@ -102,7 +104,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'meu_projeto_admin.wsgi.application'
 
-# ---
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -111,7 +112,6 @@ DATABASES = {
     'default': dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
 }
 
-# ---
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -131,7 +131,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# ---
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -141,6 +140,7 @@ TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True # Habilita o sistema de tradução do Django
 USE_TZ = True   # Habilita suporte a fusos horários
 
+
 # --- Configurações de Localização (L10N) para o Brasil ---
 USE_L10N = True # Habilita formatação localizada de números e datas
 DECIMAL_SEPARATOR = ','
@@ -149,7 +149,6 @@ THOUSAND_SEPARATOR = '.'
 NUMBER_GROUPING = (3, 0)
 # --------------------------------------------------------
 
-# ---
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -170,6 +169,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 # Configuração para servir arquivos estáticos de forma eficiente em produção via Whitenoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+
 # --- Configurações para arquivos de Mídia (uploads de usuários, como fotos, PDFs) ---
 # MEDIA_URL: O prefixo da URL para acessar arquivos de mídia no navegador.
 # Ex: se uma foto estiver em media/fotos/minha_foto.jpg, a URL será /media/fotos/minha_foto.jpg
@@ -181,7 +181,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # -----------------------------------------------------------------------------------------
 
-# ---
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
