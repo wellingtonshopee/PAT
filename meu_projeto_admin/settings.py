@@ -33,19 +33,12 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool) # Lê do .env e converte para booleano
 
-# --- AJUSTE AQUI: ALLOWED_HOSTS para testes ---
-# Esta configuração permite que seu aplicativo responda a requisições de qualquer host
-# quando DEBUG está False (em produção).
-# É útil para ambientes de TESTE ou DESENVOLVIMENTO em plataformas como Render
-# onde o hostname pode não ser fixo ou é difícil de configurar.
-# !!! ATENÇÃO: PARA PRODUÇÃO REAL, ISSO NÃO É RECOMENDADO POR RAZÕES DE SEGURANÇA.
-# Em produção, você deve listar explicitamente os domínios permitidos.
-if DEBUG:
-    # Em desenvolvimento local, permite localhost e 127.0.0.1
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-else:
-    # Em ambiente de produção (quando DEBUG=False), permite qualquer host.
-    ALLOWED_HOSTS = ['*']
+# --- AJUSTE DEFINITIVO AQUI: ALLOWED_HOSTS para testes ---
+# Esta configuração força o ALLOWED_HOSTS para '*' (qualquer host)
+# SEMPRE, independente do DEBUG, para garantir que funcione em ambientes de teste.
+# !!! ATENÇÃO: ESSA É UMA CONFIGURAÇÃO DE TESTE/DESENVOLVIMENTO.
+# PARA PRODUÇÃO REAL, VOCÊ DEVE LISTAR EXPLICITAMENTE SEUS DOMÍNIOS.
+ALLOWED_HOSTS = ['*'] # Permite qualquer host para fins de teste
 
 # Application definition
 INSTALLED_APPS = [
