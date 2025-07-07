@@ -2,6 +2,8 @@
 
 from django.urls import path
 from . import views
+# Remove TemplateView import if AbsenteismoHomeView is no longer here
+# from django.views.generic import TemplateView
 
 urlpatterns = [
     # URLs para EPIs
@@ -22,6 +24,9 @@ urlpatterns = [
     path('colaboradores/editar/<int:pk>/', views.editar_colaborador, name='editar_colaborador'),
     path('colaboradores/excluir/<int:pk>/', views.excluir_colaborador, name='excluir_colaborador'),
 
+    # **NOVA URL PARA A API DO COLABORADOR**
+    path('api/colaborador/<int:pk>/', views.get_colaborador_data, name='api_get_colaborador_data'),
+
     # URLs para Entradas de EPI
     path('entradas/', views.listar_entradas_epi, name='listar_entradas_epi'),
     path('entradas/adicionar/', views.adicionar_entrada_epi, name='adicionar_entrada_epi'),
@@ -36,4 +41,6 @@ urlpatterns = [
     path('saidas/excluir/<int:pk>/', views.excluir_saida_epi, name='excluir_saida_epi'),
     # NOVO: URL para imprimir PDF de uma saída específica
     path('saidas/imprimir_pdf/<int:pk>/', views.imprimir_saida_epi_pdf, name='imprimir_saida_epi_pdf'),
+
+    # As URLs para Absenteísmo foram MOVIDAS para rh/urls.py
 ]

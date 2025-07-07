@@ -1,0 +1,85 @@
+{% extends 'base.html' %} {# Certifique-se de que o seu template base está correto #}
+
+{% block title %}Gestão de Absenteísmo - Início{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Gestão de Absenteísmo</h2>
+    <p class="lead">Bem-vindo à área de gestão de absenteísmo. Aqui você pode registrar, consultar e analisar os afastamentos de colaboradores.</p>
+
+    {# Exibição de mensagens do Django, como sucesso ou erro #}
+    {% if messages %}
+        <div class="messages-container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="row">
+        {# Card para Marcar Absenteísmo Diário - DESTAQUE #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100 border-primary"> {# Destaca com borda azul #}
+                <div class="card-body">
+                    <h5 class="card-title text-primary"><i class="fas fa-calendar-alt me-2"></i> Marcar Absenteísmo Diário</h5>
+                    <p class="card-text">Registre rapidamente as ausências ou presenças dos colaboradores para uma data específica, com filtros de turno.</p>
+                    <a href="{% url 'marcar_absenteismo_diario' %}" class="btn btn-primary w-100">Abrir Marcação Diária</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Listar Registros #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-list-alt me-2"></i> Ver Todos os Registros</h5>
+                    <p class="card-text">Visualize, filtre e gerencie todos os registros de absenteísmo, históricos e futuros.</p>
+                    <a href="{% url 'lista_registros_absenteismo' %}" class="btn btn-info w-100">Ver Registros</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Gerenciar Tipos de Absenteísmo #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-tags me-2"></i> Gerenciar Tipos de Absenteísmo</h5>
+                    <p class="card-text">Adicione, edite ou exclua os diferentes tipos de absenteísmo (e.g., Atestado, Falta Injustificada).</p>
+                    <a href="{% url 'lista_tipos_absenteismo' %}" class="btn btn-secondary w-100">Configurar Tipos</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Adicionar Registro Único (opcional, já que a diária cobre) #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-plus-circle me-2"></i> Adicionar Registro Avulso</h5>
+                    <p class="card-text">Crie um novo registro de absenteísmo para um único colaborador, com período específico.</p>
+                    <a href="{% url 'adicionar_registro_absenteismo' %}" class="btn btn-outline-success w-100">Adicionar Avulso</a>
+                </div>
+            </div>
+        </div>
+        
+        {# ADIÇÃO E ATIVAÇÃO DO BOTÃO DE RELATÓRIOS AQUI: #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-bar me-2"></i> Relatórios e Análises</h5>
+                    <p class="card-text">Acesse relatórios e dashboards de absenteísmo para análises estratégicas.</p>
+                    {# ESSA LINHA FOI AJUSTADA PARA O NOME CORRETO DA URL: 'relatorio_absenteismo_form' #}
+                    <a href="{% url 'relatorio_absenteismo_form' %}" class="btn btn-info w-100">Ver Relatórios</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-4 text-center">
+        <a href="{% url 'rh_home' %}" class="btn btn-outline-secondary btn-lg"><i class="fas fa-arrow-left me-2"></i> Voltar para Início RH</a>
+    </div>
+</div>
+{% endblock %}

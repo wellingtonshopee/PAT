@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Cargos{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Cargos</h1>
+
+    <p class="mb-4">
+        <a href="{% url 'adicionar_cargo' %}" class="btn btn-success me-2">Adicionar Novo Cargo</a>
+        <a href="{% url 'rh_home' %}" class="btn btn-secondary">Voltar ao Início do RH</a>
+    </p>
+
+    {% if cargos %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome do Cargo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in cargos %}
+                        <tr>
+                            <td>{{ cargo.nome }}</td>
+                            <td>
+                                <a href="{% url 'editar_cargo' cargo.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_cargo' cargo.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cargo?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum cargo cadastrado.
+        </div>
+    {% endif %}
+{% endblock %}

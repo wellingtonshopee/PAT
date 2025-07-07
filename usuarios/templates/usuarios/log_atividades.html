@@ -1,5 +1,6 @@
-{% extends 'base.html' %} {# **ATENÇÃO:** Mantenha 'base.html' se este for seu template base global #}
+{% extends 'base.html' %}
 {% load static %}
+{% load crispy_forms_tags %} {# Permite usar o filtro |crispy e |as_crispy_field #}
 
 {% block title %}Log de Atividades - Sistema de Controle Interno do HUB{% endblock %}
 
@@ -8,6 +9,26 @@
     <h1 class="mb-4">Logs de Atividades</h1>
     <p class="text-muted">Acompanhe todas as ações realizadas no sistema.</p>
 
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filtrar Logs</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                {% for field in filter.form %}
+                    <div class="col-md-4 col-sm-6 col-12">
+                        {# APENAS UMA LINHA É NECESSÁRIA AQUI PARA O CRISPY FORMS #}
+                        {# Ele já inclui o label e o help_text automaticamente #}
+                        {{ field|as_crispy_field }} 
+                    </div>
+                {% endfor %}
+                <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary me-2">Aplicar Filtro</button>
+                    <a href="{% url 'usuarios:log_atividades' %}" class="btn btn-secondary">Limpar Filtro</a>
+                </div>
+            </form>
+        </div>
+    </div>
     {% if logs %}
     <div class="table-responsive">
         <table class="table table-striped table-hover table-bordered">
@@ -33,9 +54,10 @@
             </tbody>
         </table>
     </div>
+    {# Você pode adicionar paginação aqui se tiver muitos logs #}
     {% else %}
     <div class="alert alert-info" role="alert">
-        Nenhuma atividade registrada ainda.
+        Nenhuma atividade registrada ainda com os filtros aplicados.
     </div>
     {% endif %}
 </div>

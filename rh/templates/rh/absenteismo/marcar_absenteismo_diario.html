@@ -1,0 +1,242 @@
+{% extends 'base.html' %} {# Altere para seu template base principal, se for diferente #}
+{% load crispy_forms_tags %} {# Garante que você pode usar o filtro |as_crispy_field #}
+{% load rh_filters %} {# IMPORTANTE: Carregue seu filtro customizado aqui! #}
+
+{% block title %}Marcar Absenteísmo Diário{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Marcar Absenteísmo Diário para {{ selected_date|date:'d/m/Y' }}</h2>
+    <p class="lead">Use os filtros para exibir colaboradores específicos. Marque o tipo de absenteísmo individualmente ou use a opção em massa.</p>
+
+    {# Exibição de mensagens do Django, como sucesso ou erro #}
+    {% if messages %}
+        <div class="messages-container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtrar por Data e Turno</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" method="get" action=".">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="id_data" class="form-label">Data:</label>
+                        <input type="date" name="data" id="id_data" class="form-control" value="{{ selected_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="id_turno" class="form-label">Turno:</label>
+                        <select name="turno" id="id_turno" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="MANHA" {% if selected_turno == 'MANHA' %}selected{% endif %}>Manhã</option>
+                            <option value="TARDE" {% if selected_turno == 'TARDE' %}selected{% endif %}>Tarde</option>
+                            <option value="NOITE" {% if selected_turno == 'NOITE' %}selected{% endif %}>Noite</option>
+                            <option value="INTEGRAL" {% if selected_turno == 'INTEGRAL' %}selected{% endif %}>Integral</option>
+                            <option value="ADMINISTRATIVO" {% if selected_turno == 'ADMINISTRATIVO' %}selected{% endif %}>Administrativo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">Aplicar Filtro</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form method="post" id="absenteeism-form" action="{% url 'marcar_absenteismo_diario' %}?data={{ selected_date|date:'Y-m-d' }}&turno={{ selected_turno }}">
+        {% csrf_token %}
+
+        {# Seção para marcar absenteísmo em massa #}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Marcar Absenteísmo em Massa para Todos os Colaboradores Filtrados</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label for="id_mass_absenteismo_type" class="form-label">Tipo de Absenteísmo para Aplicar a Todos:</label>
+                    <select name="mass_absenteismo_type" id="id_mass_absenteismo_type" class="form-select">
+                        <option value="">--------- Selecione para aplicar a todos ---------</option>
+                        {% for tipo in tipos_absenteismo %}
+                            <option value="{{ tipo.id }}">{{ tipo.descricao }} ({{ tipo.sigla }})</option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">Esta opção afetará apenas os colaboradores que **não tiverem** um tipo de absenteísmo selecionado individualmente abaixo (ou que estiverem vazios).</small>
+                </div>
+            </div>
+        </div>
+
+        {% if formset.errors %}
+            <div class="alert alert-danger" role="alert">
+                <h5 class="alert-heading">Erro(s) no formulário!</h5>
+                <p>Houve um problema ao salvar o absenteísmo. Por favor, verifique os erros detalhados abaixo:</p>
+                <ul class="list-unstyled mb-0">
+                {# Loop pelos erros do formset #}
+                {% for form_errors in formset.errors %}
+                    {# Cada 'form_errors' é um dicionário de erros para um formulário específico no formset #}
+                    {% for field, errors in form_errors.items %}
+                        {% if field == '__all__' %} {# Erros que não são ligados a um campo específico #}
+                            <li><strong>Erro Geral para um Registro:</strong>
+                                <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </li>
+                        {% else %} {# Erros de campos específicos #}
+                            <li><strong>Campo '{{ field|capfirst }}':</strong>
+                                <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {{ formset.management_form }} {# ESSENCIAL para formsets, cuida do total de forms, etc. #}
+        
+        <div class="table-responsive">
+            <table class="table table-striped table-hover caption-top">
+                <caption>Lista de Colaboradores para {{ selected_date|date:'d/m/Y' }} (Turno: {{ selected_turno|default:'Todos' }})</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 25%;">Colaborador</th>
+                        <th scope="col" style="width: 25%;">Tipo de Absenteísmo</th>
+                        <th scope="col" style="width: 40%;">Observações</th>
+                        <th scope="col" style="width: 10%;">Excluir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# O loop deve ser sobre colaboradores_queryset e encontrar o form correspondente #}
+                    {% if colaboradores_queryset %}
+                        {% for colaborador in colaboradores_queryset %}
+                            {% with form=formset|get_form_for_colaborador:colaborador.id %}
+                            <tr {% if form and form.errors %}class="table-danger"{% endif %}> {# Realça a linha se houver erros #}
+                                <td>
+                                    {# Campos hidden essenciais para o Django Formset. #}
+                                    {# Estes serão os campos do 'form' obtido para o colaborador atual. #}
+                                    {% if form %}
+                                        {{ form.colaborador.as_hidden }} 
+                                        {{ form.data_inicio.as_hidden }}
+                                        {{ form.data_fim.as_hidden }}
+                                        {{ form.id.as_hidden }} {# PK do registro de absenteísmo, se existir #}
+                                    {% else %}
+                                        {# Se por algum motivo não houver um form para o colaborador (não deveria acontecer com a view correta) #}
+                                        <input type="hidden" name="{{ formset.prefix }}-{{ forloop.counter0 }}-colaborador" value="{{ colaborador.id }}">
+                                        <input type="hidden" name="{{ formset.prefix }}-{{ forloop.counter0 }}-data_inicio" value="{{ selected_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="{{ formset.prefix }}-{{ forloop.counter0 }}-data_fim" value="{{ selected_date|date:'Y-m-d' }}">
+                                    {% endif %}
+
+                                    <p class="mb-0 fw-bold">{{ colaborador.nome_completo }}</p>
+
+                                    {# Exibe erros não relacionados a campos específicos que pertencem a este formulário (e.g., validação clean de form) #}
+                                    {% if form and form.non_field_errors %}
+                                        <div class="text-danger small mt-1">{{ form.non_field_errors }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form %}
+                                        {{ form.tipo_absenteismo|as_crispy_field }}
+                                        {% if form.tipo_absenteismo.errors %}
+                                            <div class="text-danger small mt-1">{{ form.tipo_absenteismo.errors }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        {# Placeholder ou mensagem se não houver form, embora a view deva garantir um form para cada #}
+                                        <select class="form-select form-select-sm" disabled>
+                                            <option>N/A</option>
+                                        </select>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form %}
+                                        {{ form.observacoes|as_crispy_field }}
+                                        {% if form.observacoes.errors %}
+                                            <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <input type="text" class="form-control form-control-sm" disabled value="N/A">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {# Checkbox para excluir o registro existente #}
+                                    {% if form and form.instance.pk %} {# Apenas mostra o checkbox se o registro já existe no banco #}
+                                        <div class="form-check d-flex justify-content-center align-items-center h-100">
+                                            {{ form.DELETE }}
+                                            <label class="form-check-label ms-2" for="{{ form.DELETE.id_for_label }}">Remover</label>
+                                        </div>
+                                    {% else %}
+                                        {# Para novos registros, não há opção de DELETE ainda #}
+                                        <small class="text-muted">Novo</small>
+                                    {% endif %}
+                                    {% if form and form.DELETE.errors %} 
+                                        <div class="text-danger small mt-1">{{ form.DELETE.errors }}</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endwith %}
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4">Nenhum colaborador encontrado para a data e turno selecionados.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <button type="submit" class="btn btn-success btn-lg shadow">Salvar Absenteísmo Diário</button>
+            <a href="{% url 'absenteismo_home' %}" class="btn btn-secondary btn-lg">Voltar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('id_data');
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Define a data atual como default se nenhuma data for selecionada na URL
+        if (!urlParams.has('data') || urlParams.get('data') === '') {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+        }
+
+        // Listener para a seleção em massa (opcional, apenas para feedback visual ou lógica no frontend)
+        const massAbsenteismoTypeSelect = document.getElementById('id_mass_absenteismo_type');
+        if (massAbsenteismoTypeSelect) {
+            massAbsenteismoTypeSelect.addEventListener('change', function() {
+                // console.log("Tipo de absenteísmo em massa selecionado:", this.value);
+                // Você pode adicionar um alerta ou alguma validação visual aqui se quiser.
+                // A lógica principal de aplicação em massa é tratada no backend (views.py).
+            });
+        }
+
+        // Adição da lógica de confirmação para o checkbox DELETE
+        const absenteeismForm = document.getElementById('absenteeism-form');
+        if (absenteeismForm) {
+            absenteeismForm.addEventListener('submit', function(event) {
+                // Seleciona todos os checkboxes de DELETE que estão marcados
+                const deleteCheckboxes = this.querySelectorAll('input[name$="-DELETE"]:checked');
+                
+                // Se houver pelo menos um checkbox de DELETE marcado
+                if (deleteCheckboxes.length > 0) {
+                    const confirmDelete = confirm('Você tem certeza que deseja remover os registros de absenteísmo selecionados? Esta ação é irreversível.');
+                    
+                    // Se o usuário clicar em "Cancelar" na confirmação, impede a submissão do formulário
+                    if (!confirmDelete) {
+                        event.preventDefault(); 
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

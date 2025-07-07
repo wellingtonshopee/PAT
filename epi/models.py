@@ -1,27 +1,30 @@
 # pat/epi/models.py
 
 from django.db import models
-from django.utils import timezone
+from django.utils import timezone 
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-import os # Importar para a função delete_signature_file_on_delete e delete_old_signature_file_on_update
-from uuid import uuid4 # Para gerar nomes de arquivo únicos
+import os
+from uuid import uuid4
 
-# Função para gerar o caminho do arquivo da assinatura
+# Importando localdate para usar como default em DateField de forma serializável
+from django.utils.timezone import localdate 
+
+# IMPORTANTE: REMOVIDA A IMPORTAÇÃO DIRETA DE Lider, Cargo, TipoContrato
+# AGORA USAREMOS REFERÊNCIAS EM STRING PARA EVITAR A CIRCULARIDADE.
+
+# --- Funções Auxiliares para Uploads ---
 def signature_upload_to(instance, filename):
     ext = filename.split('.')[-1]
-    # Gera um nome de arquivo único usando UUID para evitar colisões
     filename = f'{uuid4().hex}.{ext}'
-    # O arquivo será salvo em MEDIA_ROOT/signatures/
     return os.path.join('signatures/', filename)
 
-# NOVO: Função para gerar o caminho do arquivo PDF
 def pdf_upload_to(instance, filename):
     ext = filename.split('.')[-1]
-    # Gera um nome de arquivo único para o PDF
     filename = f'saida_epi_{uuid4().hex}.{ext}'
-    # O arquivo será salvo em MEDIA_ROOT/saidas_epi_pdf/
     return os.path.join('saidas_epi_pdf/', filename)
+
+# --- Modelos de EPI ---
 
 # 1. Modelo para Categorizar os Tipos de EPI (ex: Luvas, Capacetes)
 class TipoEPI(models.Model):
@@ -65,7 +68,6 @@ class EPI(models.Model):
 
     @property
     def estoque_atual(self):
-        # Calcula o estoque atual baseado nas entradas e saídas
         total_entradas = self.entradas_epi.aggregate(models.Sum('quantidade'))['quantidade__sum'] or 0
         total_saidas = self.saidas_epi.aggregate(models.Sum('quantidade'))['quantidade__sum'] or 0
         return total_entradas - total_saidas
@@ -76,39 +78,74 @@ class EPI(models.Model):
             return True
         return False
 
-# 3. Modelo para Colaboradores (simplificado para o módulo EPI)
-# Se você já tiver um app 'colaboradores' ou 'funcionarios', pode ignorar este e importar o seu.
-class Colaborador(models.Model):
+
+# 3. Modelo para Colaboradores (agora ColaboradorEPI, para evitar conflito)
+class ColaboradorEPI(models.Model): # <--- RENOMEADO AQUI!
     nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo")
-    matricula = models.CharField(max_length=50, unique=True, verbose_name="Matrícula")
-    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF", help_text="Formato: XXX.XXX.XXX-XX")
-    data_admissao = models.DateField(verbose_name="Data de Admissão", default=timezone.now)
+    matricula = models.CharField(max_length=50, unique=True, verbose_name="Matrícula", blank=True, null=True)
+    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF", help_text="Formato: XXX.XXX.XXX-XX", blank=True, null=True)
+    
+    # CAMPOS RH (agora usando referências em string para evitar importação circular)
+    station_id = models.CharField(max_length=50, unique=True, verbose_name="Station ID", help_text="ID da Estação de Trabalho", blank=True, null=True)
+    codigo = models.CharField(max_length=50, unique=True, verbose_name="Código do Colaborador", blank=True, null=True)
+    bpo = models.CharField(max_length=100, verbose_name="BPO", blank=True, null=True)
+
+    tipo_contrato = models.ForeignKey(
+        'rh.TipoContrato', # <--- CORRIGIDO: Referência em string
+        on_delete=models.SET_NULL, 
+        null=True,
+        blank=True,
+        verbose_name="Tipo de Contrato",
+    )
+    
+    lider = models.ForeignKey('rh.Lider', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Líder") # <--- CORRIGIDO: Referência em string
+    cargo = models.ForeignKey('rh.Cargo', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Cargo") # <--- CORRIGIDO: Referência em string
+
+    TURNO_CHOICES = [
+        ('MANHA', 'Manhã'),
+        ('TARDE', 'Tarde'),
+        ('NOITE', 'Noite'),
+        ('INTEGRAL', 'Integral'),
+    ]
+    turno = models.CharField(
+        max_length=10,
+        choices=TURNO_CHOICES,
+        verbose_name="Turno",
+        blank=True,
+        null=True
+    )
+
+    data_admissao = models.DateField(verbose_name="Data de Admissão", default=localdate) 
+    data_desligamento = models.DateField(verbose_name="Data de Desligamento", blank=True, null=True)
+    foto = models.ImageField(upload_to='colaboradores_fotos/', blank=True, null=True, verbose_name="Foto do Colaborador")
+
     ativo = models.BooleanField(default=True, verbose_name="Ativo")
 
     class Meta:
-        verbose_name = "Colaborador"
-        verbose_name_plural = "Colaboradores"
+        verbose_name = "Colaborador (EPI)" 
+        verbose_name_plural = "Colaboradores (EPI)"
         ordering = ['nome_completo']
 
     def __str__(self):
-        return f"{self.nome_completo} ({self.matricula})"
+        identifier = self.station_id or self.matricula
+        return f"{self.nome_completo} ({identifier})" if identifier else self.nome_completo
 
 # 4. Modelo para Registrar Entradas de EPI no Estoque
 class EntradaEPI(models.Model):
     epi = models.ForeignKey(
         EPI,
-        on_delete=models.CASCADE, # Se o EPI for deletado, as entradas relacionadas também são
+        on_delete=models.CASCADE,
         related_name='entradas_epi',
         verbose_name="EPI"
     )
-    quantidade = models.PositiveIntegerField(verbose_name="Quantidade")
+    quantidade = models.PositiveIntegerField(verbose_name="Quantidade Entregue")
     data_entrada = models.DateTimeField(auto_now_add=True, verbose_name="Data de Entrada")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
 
     class Meta:
         verbose_name = "Entrada de EPI"
         verbose_name_plural = "Entradas de EPI"
-        ordering = ['-data_entrada'] # Ordena da mais recente para a mais antiga
+        ordering = ['-data_entrada']
 
     def __str__(self):
         return f"Entrada de {self.quantidade}x {self.epi.nome} em {self.data_entrada.strftime('%d/%m/%Y')}"
@@ -117,26 +154,25 @@ class EntradaEPI(models.Model):
 class SaidaEPI(models.Model):
     epi = models.ForeignKey(
         EPI,
-        on_delete=models.PROTECT, # Protege o EPI de ser deletado se houver saídas associadas
+        on_delete=models.PROTECT,
         related_name='saidas_epi',
         verbose_name="EPI"
     )
     colaborador = models.ForeignKey(
-        Colaborador,
-        on_delete=models.PROTECT, # Protege o Colaborador de ser deletado se houver saídas associadas
+        ColaboradorEPI, 
+        on_delete=models.PROTECT,
         related_name='epis_recebidos',
         verbose_name="Colaborador"
     )
     quantidade = models.PositiveIntegerField(verbose_name="Quantidade Entregue")
     data_saida = models.DateTimeField(default=timezone.now, verbose_name="Data/Hora da Saída")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações da Entrega")
-    assinatura_digital = models.ImageField( # Campo para assinatura digital
+    assinatura_digital = models.ImageField(
         upload_to=signature_upload_to,
         blank=True,
         null=True,
         verbose_name="Assinatura Digital"
     )
-    # NOVO CAMPO para armazenar o arquivo PDF gerado
     pdf_documento = models.FileField(
         upload_to=pdf_upload_to,
         blank=True,
@@ -147,47 +183,41 @@ class SaidaEPI(models.Model):
     class Meta:
         verbose_name = "Saída de EPI"
         verbose_name_plural = "Saídas de EPI"
-        ordering = ['-data_saida'] # Ordena as saídas por data mais recente
+        ordering = ['-data_saida']
 
     def __str__(self):
         return f"Saída de {self.quantidade}x {self.epi.nome} para {self.colaborador.nome_completo}"
 
-# Signals para gerenciar arquivos de assinatura
-# Opcional: Signal para deletar o arquivo de assinatura quando o objeto SaidaEPI é deletado
+
+# --- Signals (não alterados, pois já estavam corretos) ---
 @receiver(post_delete, sender=SaidaEPI)
 def delete_signature_file_on_delete(sender, instance, **kwargs):
     if instance.assinatura_digital:
         if os.path.isfile(instance.assinatura_digital.path):
             os.remove(instance.assinatura_digital.path)
-            
-# Opcional: Signal para deletar a assinatura antiga quando uma nova é salva no mesmo objeto
+
 @receiver(post_save, sender=SaidaEPI)
 def delete_old_signature_file_on_update(sender, instance, **kwargs):
-    if not kwargs['created']: # Se não for uma nova criação (ou seja, é uma atualização)
+    if not kwargs['created']:
         try:
-            # Pega a instância antiga do banco de dados antes da atualização
             old_instance = sender.objects.get(pk=instance.pk)
-            # Se o campo de assinatura mudou e a assinatura antiga existe, remove o arquivo antigo
             if old_instance.assinatura_digital and old_instance.assinatura_digital.path != instance.assinatura_digital.path:
                 if os.path.isfile(old_instance.assinatura_digital.path):
                     os.remove(old_instance.assinatura_digital.path)
         except sender.DoesNotExist:
-            pass # O objeto não existia antes (cenário raro para atualização)
+            pass
 
-# Opcional: Signal para deletar o arquivo PDF quando o objeto SaidaEPI é deletado
 @receiver(post_delete, sender=SaidaEPI)
 def delete_pdf_file_on_delete(sender, instance, **kwargs):
     if instance.pdf_documento:
         if os.path.isfile(instance.pdf_documento.path):
             os.remove(instance.pdf_documento.path)
 
-# Opcional: Signal para deletar o PDF antigo quando um novo é salvo no mesmo objeto
 @receiver(post_save, sender=SaidaEPI)
 def delete_old_pdf_file_on_update(sender, instance, **kwargs):
-    if not kwargs['created']: # Se não for uma nova criação (ou seja, é uma atualização)
+    if not kwargs['created']:
         try:
             old_instance = sender.objects.get(pk=instance.pk)
-            # Se o campo de PDF mudou e o PDF antigo existe, remove o arquivo antigo
             if old_instance.pdf_documento and old_instance.pdf_documento.path != instance.pdf_documento.path:
                 if os.path.isfile(old_instance.pdf_documento.path):
                     os.remove(old_instance.pdf_documento.path)

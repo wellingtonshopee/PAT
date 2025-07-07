@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Confirmar Exclusão de Tipo de Contrato</h1>
+
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">Atenção!</h4>
+        <p>Você está prestes a excluir o tipo de contrato: <strong>{{ tipo_contrato.nome }}</strong>.</p>
+        <p>Esta ação é irreversível e pode afetar colaboradores associados a este tipo de contrato (dependendo da sua regra de `on_delete` no modelo `Colaborador`).</p>
+        <p>Tem certeza que deseja continuar?</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'lista_tipos_contrato' %}" class="btn btn-secondary me-2">Cancelar</a>
+        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    </form>
+{% endblock %}

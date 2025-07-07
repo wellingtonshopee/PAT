@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Confirmar Exclusão de Registro de Absenteísmo</h1>
+
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">Atenção!</h4>
+        <p>Você está prestes a excluir o seguinte registro de absenteísmo:</p>
+        <p><strong>Colaborador:</strong> {{ registro.colaborador.nome_completo }}</p>
+        <p><strong>Tipo de Absenteísmo:</strong> {{ registro.tipo_absenteismo.descricao }}</p>
+        <p><strong>Período:</strong> {{ registro.data_inicio|date:"d/m/Y" }} a {{ registro.data_fim|date:"d/m/Y" }} ({{ registro.total_dias }} dias)</p>
+        <p>Esta ação é irreversível.</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'lista_registros_absenteismo' %}" class="btn btn-secondary me-2">Cancelar</a>
+        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    </form>
+{% endblock %}

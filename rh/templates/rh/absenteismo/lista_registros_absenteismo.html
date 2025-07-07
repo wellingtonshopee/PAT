@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Registros de Absenteísmo{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Registros de Absenteísmo</h1>
+
+    {# Links de Ação #}
+    <p class="mb-4">
+        <a href="{% url 'adicionar_registro_absenteismo' %}" class="btn btn-success me-2">Adicionar Novo Registro</a>
+        <a href="{% url 'absenteismo_home' %}" class="btn btn-secondary">Voltar ao Início do Absenteísmo</a>
+        {# NOVO BOTÃO/LINK PARA EXPORTAR CSV - CORRIGIDO O NOME DA URL E OS PARÂMETROS #}
+        {# Agora ele passará todos os filtros atualmente ativos na página. #}
+        <a href="{% url 'exportar_absenteismo_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-info ms-2">
+            <i class="bi bi-file-earmark-arrow-down"></i> Exportar CSV
+        </a>
+    </p>
+
+    {# Formulário de Filtros #}
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="colaborador" class="form-label">Colaborador</label>
+            <input type="text" name="colaborador" id="colaborador" class="form-control" value="{{ request.GET.colaborador }}">
+        </div>
+
+        <div class="col-md-4">
+            <label for="tipo" class="form-label">Tipo de Absenteísmo</label>
+            <select name="tipo" id="tipo" class="form-select">
+                <option value="">Todos</option>
+                {% for tipo in tipos_absenteismo %}
+                    <option value="{{ tipo.id }}" {% if request.GET.tipo == tipo.id|stringformat:"s" %}selected{% endif %}>
+                        {{ tipo.descricao }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label for="data_inicio" class="form-label">Data Início (de)</label>
+            <input type="date" name="data_inicio" id="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+        </div>
+
+        <div class="col-md-2">
+            <label for="data_fim" class="form-label">Data Fim (até)</label>
+            <input type="date" name="data_fim" id="data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+        </div>
+
+        <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+            <a href="{% url 'lista_registros_absenteismo' %}" class="btn btn-secondary">Limpar</a>
+        </div>
+    </form>
+
+    {# Tabela de Registros de Absenteísmo #}
+    {% if registros %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Colaborador</th>
+                        <th>Tipo de Absenteísmo</th> 
+                        <th>Data Início</th>
+                        <th>Data Fim</th>
+                        <th>Total de Dias</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in registros %}
+                        <tr>
+                            <td>{{ registro.colaborador.nome_completo }}</td>
+                            {# ALTERADO AQUI: Combinando sigla e descrição #}
+                            <td>{{ registro.tipo_absenteismo.sigla }} - {{ registro.tipo_absenteismo.descricao }}</td> 
+                            <td>{{ registro.data_inicio|date:"d/m/Y"|default_if_none:"N/A" }}</td>
+                            <td>{{ registro.data_fim|date:"d/m/Y"|default_if_none:"N/A" }}</td>
+                            <td>{{ registro.total_dias|default_if_none:"0" }}</td>
+                            <td>
+                                <a href="{% url 'editar_registro_absenteismo' registro.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_registro_absenteismo' registro.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este registro de absenteísmo?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum registro de absenteísmo encontrado.
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Líderes{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Líderes</h1>
+
+    <p class="mb-4">
+        <a href="{% url 'adicionar_lider' %}" class="btn btn-success me-2">Adicionar Novo Líder</a>
+        <a href="{% url 'rh_home' %}" class="btn btn-secondary">Voltar ao Início do RH</a>
+    </p>
+
+    {% if lideres %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome do Líder</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lider in lideres %}
+                        <tr>
+                            <td>{{ lider.nome }}</td>
+                            <td>
+                                <a href="{% url 'editar_lider' lider.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'excluir_lider' lider.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este líder?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhum líder cadastrado.
+        </div>
+    {% endif %}
+{% endblock %}

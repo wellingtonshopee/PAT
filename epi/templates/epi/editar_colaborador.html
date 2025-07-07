@@ -1,4 +1,3 @@
-{# pat/epi/templates/epi/editar_colaborador.html #}
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 
@@ -8,35 +7,67 @@
     <h1 class="mb-4">Editar Colaborador: {{ colaborador.nome_completo }}</h1>
 
     <div class="card p-4 shadow-sm">
-        <form method="post">
+        {# IMPORTANTE: Adicionado enctype="multipart/form-data" para upload de arquivos #}
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            {% for field in form %}
-                {% if field.widget_type == 'checkbox' %}
-                    <div class="form-check mb-3">
-                        {% render_field field class="form-check-input" %}
-                        <label class="form-check-label" for="{{ field.id_for_label }}">
-                            {{ field.label }}
-                        </label>
-                        {% if field.help_text %}
-                            <div class="form-text text-muted">{{ field.help_text }}</div>
-                        {% endif %}
-                        {% for error in field.errors %}
-                            <div class="alert alert-danger mt-1">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        {% render_field field class="form-control" %}
-                        {% if field.help_text %}
-                            <div class="form-text text-muted">{{ field.help_text }}</div>
-                        {% endif %}
-                        {% for error in field.errors %}
-                            <div class="alert alert-danger mt-1">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endfor %}
+            
+            <div class="row g-3">
+                {% for field in form %}
+                    {% if field.name == 'foto' %}
+                        {# Coluna para o campo de foto e visualização #}
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {# Renderiza o input de arquivo #}
+                            {% render_field field class="form-control" %}
+                            
+                            {# Exibir a imagem atual se ela existir #}
+                            {% if form.instance.foto %}
+                                <div class="mt-2 text-center">
+                                    {# Imagem com estilo 3x4 #}
+                                    <img src="{{ form.instance.foto.url }}" alt="Foto atual do colaborador" class="img-thumbnail" style="width: 105px; height: 140px; object-fit: cover;">
+                                    <p class="mt-1"><small>Foto atual. Selecione um novo arquivo para substituir.</small></p>
+                                </div>
+                            {% else %}
+                                <p class="mt-2 text-muted"><small>Nenhuma foto atual. Faça o upload de uma.</small></p>
+                            {% endif %}
+
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="alert alert-danger mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% elif field.widget_type == 'checkbox' %}
+                        {# Coluna para checkboxes #}
+                        <div class="col-md-6 form-check mb-3">
+                            {% render_field field class="form-check-input" %}
+                            <label class="form-check-label" for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="alert alert-danger mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {# Coluna para outros campos #}
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% render_field field class="form-control" %}
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="alert alert-danger mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
             <button type="submit" class="btn btn-primary mt-3">Salvar Alterações</button>
             <a href="{% url 'listar_colaboradores' %}" class="btn btn-secondary mt-3 ms-2">Cancelar</a>
         </form>

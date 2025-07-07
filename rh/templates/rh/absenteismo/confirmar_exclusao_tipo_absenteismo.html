@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Confirmar Exclusão de Tipo de Absenteísmo</h1>
+
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">Atenção!</h4>
+        <p>Você está prestes a excluir o tipo de absenteísmo: <strong>{{ tipo_absenteismo.sigla }} - {{ tipo_absenteismo.descricao }}</strong>.</p>
+        <p>Esta ação é irreversível e pode afetar registros de absenteísmo associados a este tipo.</p>
+        <p>Tem certeza que deseja continuar?</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'lista_tipos_absenteismo' %}" class="btn btn-secondary me-2">Cancelar</a>
+        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    </form>
+{% endblock %}

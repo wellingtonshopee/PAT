@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Registro de Absenteísmo{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Editar Registro de Absenteísmo</h1>
+
+    <div class="card mb-4 p-4 shadow-sm">
+        {# IMPORTANTE: Adicione `enctype="multipart/form-data"` para permitir o upload de arquivos (atestado_medico) #}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {# Exibe erros gerais do formulário, se houver #}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.colaborador.id_for_label }}" class="form-label">{{ form.colaborador.label }}</label>
+                    {# Adicionado ID para o JavaScript #}
+                    {% render_field form.colaborador class="form-select" id="id_colaborador_select" %}
+                    {% if form.colaborador.errors %}
+                        <div class="invalid-feedback d-block">{{ form.colaborador.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {# NOVOS CAMPOS PARA EXIBIR DADOS DO COLABORADOR #}
+                <div class="col-md-6">
+                    <label for="id_tipo_contrato_display" class="form-label">Tipo de Contrato</label>
+                    <input type="text" id="id_tipo_contrato_display" class="form-control" disabled>
+                </div>
+                <div class="col-md-6">
+                    <label for="id_lider_display" class="form-label">Líder</label>
+                    <input type="text" id="id_lider_display" class="form-control" disabled>
+                </div>
+                <div class="col-md-6">
+                    <label for="id_cargo_display" class="form-label">Cargo</label>
+                    <input type="text" id="id_cargo_display" class="form-control" disabled>
+                </div>
+                {# FIM DOS NOVOS CAMPOS #}
+
+                <div class="col-md-6">
+                    <label for="{{ form.tipo_absenteismo.id_for_label }}" class="form-label">{{ form.tipo_absenteismo.label }}</label>
+                    {% render_field form.tipo_absenteismo class="form-select" %}
+                    {% if form.tipo_absenteismo.errors %}
+                        <div class="invalid-feedback d-block">{{ form.tipo_absenteismo.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.data_inicio.id_for_label }}" class="form-label">{{ form.data_inicio.label }}</label>
+                    {% render_field form.data_inicio class="form-control" type="date" %}
+                    {% if form.data_inicio.errors %}
+                        <div class="invalid-feedback d-block">{{ form.data_inicio.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.data_fim.id_for_label }}" class="form-label">{{ form.data_fim.label }}</label>
+                    {% render_field form.data_fim class="form-control" type="date" %}
+                    {% if form.data_fim.errors %}
+                        <div class="invalid-feedback d-block">{{ form.data_fim.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.atestado_medico.id_for_label }}" class="form-label">{{ form.atestado_medico.label }}</label>
+                    {# Renderizar o campo de arquivo #}
+                    {% render_field form.atestado_medico class="form-control" %}
+                    {% if form.atestado_medico.errors %}
+                        <div class="invalid-feedback d-block">{{ form.atestado_medico.errors }}</div>
+                    {% endif %}
+                    <div class="form-text text-muted">
+                        {% if form.instance.atestado_medico %}
+                            Arquivo atual: <a href="{{ form.instance.atestado_medico.url }}" target="_blank">{{ form.instance.atestado_medico.name|cut:"atestados_medicos/" }}</a> <br>
+                            Selecione um novo arquivo para substituir o atual.
+                        {% else %}
+                            {{ form.atestado_medico.help_text }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+                    {% render_field form.observacoes class="form-control" rows="3" %}
+                    {% if form.observacoes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-end">
+                <a href="{% url 'lista_registros_absenteismo' %}" class="btn btn-secondary me-2">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+
+    {# JavaScript para buscar e preencher os dados do colaborador #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const colaboradorSelect = document.getElementById('id_colaborador_select');
+            const tipoContratoDisplay = document.getElementById('id_tipo_contrato_display');
+            const liderDisplay = document.getElementById('id_lider_display');
+            const cargoDisplay = document.getElementById('id_cargo_display');
+
+            // Função para limpar os campos
+            function clearColaboradorData() {
+                tipoContratoDisplay.value = '';
+                liderDisplay.value = '';
+                cargoDisplay.value = '';
+            }
+
+            // Função para buscar e preencher os dados
+            async function fetchColaboradorData(colaboradorId) {
+                // Adicionado log para depuração
+                console.log('DEBUG JS (Edição): ID do Colaborador selecionado para API:', colaboradorId);
+
+                if (!colaboradorId) {
+                    clearColaboradorData();
+                    return;
+                }
+
+                try {
+                    // *** AQUI ESTÁ O AJUSTE! De '/epi/api/' para '/epis/api/' ***
+                    const response = await fetch(`/epis/api/colaborador/${colaboradorId}/`);
+                    // Adicionado log para depuração
+                    console.log('DEBUG JS (Edição): Status da Resposta da API:', response.status);
+
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            console.warn('DEBUG JS (Edição): Colaborador não encontrado na API (404).');
+                        } else {
+                            // Tenta ler o corpo da resposta para mais detalhes sobre o erro
+                            const errorText = await response.text();
+                            console.error(`DEBUG JS (Edição): Erro ao buscar dados do colaborador: ${response.status} ${response.statusText}. Resposta: ${errorText}`);
+                        }
+                        clearColaboradorData();
+                        return;
+                    }
+
+                    const data = await response.json();
+                    // Adicionado log para depuração
+                    console.log('DEBUG JS (Edição): Dados recebidos da API:', data);
+
+                    // Preenche os campos com os dados recebidos ou 'N/A' se forem nulos
+                    tipoContratoDisplay.value = data.tipo_contrato || 'N/A';
+                    liderDisplay.value = data.lider || 'N/A';
+                    cargoDisplay.value = data.cargo || 'N/A';
+
+                } catch (error) {
+                    console.error('DEBUG JS (Edição): Erro na requisição Fetch (problema de rede ou JSON inválido):', error);
+                    clearColaboradorData();
+                }
+            }
+
+            // Adiciona o evento de 'change' ao select do colaborador
+            colaboradorSelect.addEventListener('change', function() {
+                const selectedColaboradorId = this.value;
+                fetchColaboradorData(selectedColaboradorId);
+            });
+
+            // *** IMPORTANTE PARA EDIÇÃO: PREENCHER AO CARREGAR A PÁGINA ***
+            // Se a página for carregada com um colaborador já selecionado (e.g., em um formulário de edição)
+            // Ou se houver um valor inicial ao recarregar a página após um erro de validação
+            if (colaboradorSelect.value) {
+                fetchColaboradorData(colaboradorSelect.value);
+            }
+        });
+    </script>
+{% endblock %}

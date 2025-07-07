@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Início do RH{% endblock %}
+
+{% block content %}
+<div class="container mt-4"> {# Adicionado container para melhor centralização e margens #}
+    <h1 class="mb-4">Bem-vindo ao Módulo de Recursos Humanos</h1>
+
+    {# Exibição de mensagens do Django, como sucesso ou erro #}
+    {% if messages %}
+        <div class="messages-container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i> Visão Geral</h5>
+                    <p class="card-text">
+                        Total de Colaboradores Ativos: <strong>{{ total_colaboradores }}</strong>
+                    </p>
+                    <hr>
+                    <h6>Tipos de Contrato por Colaborador:</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for tipo in tipos_contrato_count %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ tipo.nome }}
+                                <span class="badge bg-primary rounded-pill">{{ tipo.num_colabs }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">Nenhum tipo de contrato encontrado.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-hand-point-right me-2"></i> Navegação Rápida</h5>
+                    <div class="d-grid gap-2">
+                        {# Link principal para o MÓDULO de Absenteísmo #}
+                        <a href="{% url 'absenteismo_home' %}" class="btn btn-primary btn-lg mb-2">
+                            <i class="fas fa-user-times me-2"></i> Módulo de Absenteísmo
+                        </a>
+                        {# Os outros links agora são diretos para suas respectivas listas #}
+                        <a href="{% url 'lista_tipos_contrato' %}" class="btn btn-info btn-lg mb-2">
+                            <i class="fas fa-file-contract me-2"></i> Tipos de Contrato
+                        </a>
+                        <a href="{% url 'lista_lideres' %}" class="btn btn-success btn-lg mb-2">
+                            <i class="fas fa-user-tie me-2"></i> Líderes
+                        </a>
+                        <a href="{% url 'lista_cargos' %}" class="btn btn-warning btn-lg mb-2">
+                            <i class="fas fa-briefcase me-2"></i> Cargos
+                        </a>
+                        {# O link para 'epi_home' foi removido para evitar o erro NoReverseMatch #}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> {# Fecha o container #}
+{% endblock %}
