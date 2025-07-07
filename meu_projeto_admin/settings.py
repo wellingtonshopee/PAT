@@ -20,6 +20,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Força a leitura do arquivo .env no BASE_DIR
+# O arquivo .env deve estar no mesmo nível da pasta meu_projeto_admin e manage.py
 env_path = os.path.join(BASE_DIR, '.env')
 config = Config(RepositoryEnv(env_path))
 
@@ -30,22 +31,23 @@ config = Config(RepositoryEnv(env_path))
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool) # Agora lê do .env e converte para booleano
+DEBUG = config('DEBUG', default=False, cast=bool) # Lê do .env e converte para booleano
 
-# --- AJUSTE AQUI: ALLOWED_HOSTS ---
-# Sempre inclua localhost e 127.0.0.1 para desenvolvimento.
-# Em produção, o Render ou outros serviços de hospedagem podem precisar de '*'
-# ou de nomes de host explícitos (ex: seu_app.onrender.com).
-# Usar o .env para gerenciar isso é mais flexível.
+# --- Configuração de ALLOWED_HOSTS para desenvolvimento e produção ---
 if DEBUG:
+    # Em desenvolvimento, permite localhost e 127.0.0.1
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 else:
-    # Em produção, tente ler de uma variável de ambiente para ser explícito e seguro.
-    # Se DJANGO_ALLOWED_HOSTS não estiver definido, então use ['*'] como fallback
-    # (mas é melhor definir explicitamente no Render).
-    # Ex: no Render, defina uma variável de ambiente DJANGO_ALLOWED_HOSTS = 'pat-gmhm.onrender.com'
-    allowed_hosts_str = config('DJANGO_ALLOWED_HOSTS', default='*')
-    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
+    # Em produção, lê os hosts permitidos de uma variável de ambiente.
+    # Ex: No Render, defina DJANGO_ALLOWED_HOSTS = 'pat-gmhm.onrender.com'
+    # Se não definida, ou se vazia, o padrão '*, o * permite qualquer host (menos seguro, mas funcional em alguns PaaS).
+    allowed_hosts_str = config('DJANGO_ALLOWED_HOSTS', default='')
+    if allowed_hosts_str:
+        ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
+    else:
+        # Fallback para '*' se DJANGO_ALLOWED_HOSTS não for definido ou estiver vazio.
+        # Idealmente, você sempre especificaria o host no Render.
+        ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -79,9 +81,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # --- NOVIDADE: Adicionado o Middleware de Log de Atividades ---
+    # --- Certifique-se de que o middleware de log esteja corretamente referenciado ---
     'usuarios.middleware.LogAtividadeMiddleware',
-    # -------------------------------------------------------------
 ]
 
 ROOT_URLCONF = 'meu_projeto_admin.urls'
