@@ -64,7 +64,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware', # ADICIONADO AQUI, NO TOPO, PARA SERVIR ESTÁTICOS EM PRODUÇÃO
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -72,8 +72,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # --- Certifique-se de que o middleware de log esteja corretamente referenciado ---
-    'usuarios.middleware.LogAtividadeMiddleware',
+    # --- Middleware de log com o nome da classe corrigido ---
+    'usuarios.middleware.RequestLogMiddleware', # <--- CORRIGIDO AQUI!
 ]
 
 ROOT_URLCONF = 'meu_projeto_admin.urls'
