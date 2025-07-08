@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Imprimir Etiquetas de Patrimônio</title>
+    <style>
+        /* Estilos CSS para a impressão das etiquetas */
+        @page {
+            /* Define o tamanho da página para o tamanho EXATO da etiqueta (Largura x Altura) */
+            /* Isso é crucial para impressoras térmicas ou folhas de etiquetas personalizadas */
+            size: 70mm 40mm; 
+            margin: 0mm;    /* Remove todas as margens da página */
+            padding: 0mm;   /* Remove padding da página */
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Para impressoras térmicas, geralmente queremos que as etiquetas fluam uma após a outra. */
+            /* Define a largura do corpo para a largura da etiqueta */
+            width: 70mm; 
+            /* Remova display: flex do body se for imprimir uma etiqueta por "página" de impressora térmica,
+               ou se for um fluxo contínuo onde cada label-container é uma "página" implícita.
+               Mantemos 'block' para um fluxo vertical simples. */
+            display: block; 
+        }
+        .label-container {
+            /* Tamanho da etiqueta: 70mm largura, 40mm altura */
+            width: 70mm;
+            height: 40mm;
+            /* Padding interno para o conteúdo da etiqueta */
+            padding: 2mm; 
+            box-sizing: border-box; /* Garante que padding e borda sejam incluídos na largura/altura */
+            /* Remover borda em produção, era para visualização durante o desenvolvimento */
+            /* border: 0.1px solid #ccc; */ 
+            overflow: hidden; /* Esconde qualquer conteúdo que exceda o tamanho da etiqueta */
+
+            /* Margens para o layout de folha A4 (nth-child) foram REMOVIDAS. */
+            /* Para impressora térmica, a margem DEVE ser 0 para preencher a etiqueta. */
+            margin: 0; 
+            float: none; /* Garante que as etiquetas não flutuem e se empilhem verticalmente */
+        }
+        
+        /* As regras de espaçamento de colunas (nth-child) foram REMOVIDAS,
+           pois são específicas para o layout de folha A4 e não se aplicam a impressoras térmicas de rolo. */
+
+        .label-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centraliza verticalmente */
+            align-items: center; /* Centraliza horizontalmente */
+            height: 100%; /* Ocupa toda a altura do container */
+            width: 100%; /* Ocupa toda a largura do container */
+            font-size: 8pt; /* Tamanho da fonte para caber na etiqueta */
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .label-content img {
+            max-width: 35mm; /* Tamanho máximo do QR code na etiqueta */
+            max-height: 25mm;
+            height: auto;
+            margin-bottom: 2mm; /* Espaço abaixo do QR */
+        }
+
+        .label-content p {
+            margin: 0;
+            padding: 0;
+            word-break: break-word; /* Quebra palavras longas para caber */
+        }
+
+        /* Regras específicas para impressão */
+        @media print {
+            body {
+                /* Para impressão em térmica, queremos o fluxo direto sem layouts complexos */
+                display: block; /* Garante que as etiquetas se empilhem */
+                margin: 0;
+                padding: 0;
+                width: 70mm; /* A largura do corpo permanece a largura da etiqueta */
+            }
+            .label-container {
+                page-break-inside: avoid; /* Evita quebras de página DENTRO da etiqueta */
+                /* Opcional: Força uma "nova página" (nova etiqueta) após cada uma. 
+                   Útil para impressoras que cortam automaticamente ou alimentam uma etiqueta por vez. */
+                /* page-break-after: always; */ 
+                page-break-after: auto; /* Permite o fluxo normal; a impressora decide se corta ou não */
+                margin: 0; /* Garante que não haja margens adicionais na impressão */
+                float: none; /* Remove float para garantir o fluxo de bloco */
+            }
+            /* Todas as regras de nth-child para layout de colunas foram REMOVIDAS aqui também */
+        }
+    </style>
+</head>
+<body>
+    {% for item in etiquetas_data %}
+    <div class="label-container">
+        <div class="label-content">
+            {% if item.qr_code_base64 %}
+                <img src="data:image/png;base64,{{ item.qr_code_base64 }}" alt="QR Code do Patrimônio">
+            {% endif %}
+            <p><strong>{{ item.nome }}</strong></p>
+            <p>{{ item.codigo_patrimonial }}</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script>
+        // Automaticamente abre a caixa de diálogo de impressão ao carregar a página
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>

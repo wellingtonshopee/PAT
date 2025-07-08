@@ -1,12 +1,14 @@
-# pat/patrimonio/forms.py
-
+# patrimonio/forms.py
 from django import forms
-# Certifique-se de importar MovimentacaoPatrimonio aqui!
-from .models import CategoriaPatrimonio, LocalizacaoPatrimonio, ItemPatrimonio, MovimentacaoPatrimonio 
+from .models import CategoriaPatrimonio, LocalizacaoPatrimonio, ItemPatrimonio, MovimentacaoPatrimonio
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-User = get_user_model() 
+# Importações para o Crispy Forms
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, Row, Column # Adicione Row e Column para um layout mais organizado
+
+User = get_user_model()
 
 # --- Formulário para Adição/Edição de Item de Patrimônio ---
 class ItemPatrimonioForm(forms.ModelForm):
@@ -23,8 +25,6 @@ class ItemPatrimonioForm(forms.ModelForm):
         labels = {
             'nome': 'Nome do Bem Patrimonial',
             'codigo_patrimonial': 'Código Patrimonial',
-            'numero_serie': 'Número de Série',
-            'descricao': 'Descrição Detalhada',
             'data_aquisicao': 'Data de Aquisição',
             'valor_aquisicao': 'Valor de Aquisição (R$)',
             'estado_conservacao': 'Estado de Conservação',
@@ -32,6 +32,8 @@ class ItemPatrimonioForm(forms.ModelForm):
             'categoria': 'Categoria',
             'localizacao': 'Localização Atual',
             'responsavel_atual': 'Responsável Atual',
+            'numero_serie': 'Número de Série',
+            'descricao': 'Descrição Detalhada',
         }
         help_texts = {
             'codigo_patrimonial': 'Um código único para identificar o patrimônio.',
@@ -51,7 +53,7 @@ class ItemPatrimonioForm(forms.ModelForm):
         }
 
 
-# --- Formulário de Filtro de Patrimônio ---
+# --- Formulário de Filtro de Patrimônio (Ajustado com Crispy Forms) ---
 class PatrimonioFilterForm(forms.Form):
     search_query = forms.CharField(
         max_length=200,
@@ -95,17 +97,58 @@ class PatrimonioFilterForm(forms.Form):
         required=False,
         label='Adquirido A Partir De',
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        help_text='Data inicial de aquisição (AAAA-MM-DD)'
+        input_formats=['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'],
+        help_text='Data inicial de aquisição (AAAA-MM-DD ou DD/MM/AAAA)'
     )
     data_aquisicao_fim = forms.DateField(
         required=False,
         label='Adquirido Até',
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        help_text='Data final de aquisição (AAAA-MM-DD)'
+        input_formats=['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'],
+        help_text='Data final de aquisição (AAAA-MM-DD ou DD/MM/AAAA)'
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'get' # O formulário de filtro deve usar GET
+        self.helper.layout = Layout(
+            Row(
+                Column('search_query', css_class='form-group col-md-3 mb-0'),
+                Column('categoria', css_class='form-group col-md-2 mb-0'),
+                Column('localizacao', css_class='form-group col-md-2 mb-0'),
+                Column('estado_conservacao', css_class='form-group col-md-2 mb-0'),
+                Column('status', css_class='form-group col-md-2 mb-0'),
+                css_class='g-3' # Gutter para espaçamento entre colunas
+            ),
+            Row(
+                Column('data_aquisicao_inicio', css_class='form-group col-md-3 mb-0'),
+                Column('data_aquisicao_fim', css_class='form-group col-md-3 mb-0'),
+                Column(
+                    Submit('submit', 'Aplicar Filtros', css_class='btn btn-primary'),
+                    # Você precisará de um botão de limpar separado no template se não usar url como action
+                    # 'patrimonio:gerar_relatorio_patrimonio'
+                    css_class='form-group col-md-auto d-flex align-items-end mb-0'
+                ),
+                css_class='g-3'
+            )
+            # Os botões "Aplicar Filtros" e "Limpar Filtros" você já os tem no template,
+            # então este Submit pode ser removido ou você pode decidir renderizar o formulário todo com {{ filter_form|crispy }}
+            # Se você usar {{ filter_form|crispy }} no template, este Submit irá gerar os botões automaticamente.
+        )
+        
+        # Se você ainda estiver usando a renderização campo a campo no template ({{ filter_form.field|crispy }}),
+        # este Layout interno ainda ajuda a estruturar, mas os botões de submit são melhor gerenciados no template HTML.
+        # Por isso, mantive o layout para os campos, mas a parte do Submit pode ser flexível.
+        # Vou comentar os botões aqui, pois o template já os tem.
+        
+        # Removendo os botões daqui para evitar duplicação com o template,
+        # assumindo que você ainda usará o layout manual no HTML.
+        # Se for usar {{ filter_form|crispy }}, você pode descomentar e ajustar.
+        # self.helper.add_input(Submit('submit', 'Aplicar Filtros'))
+        # self.helper.add_input(Button('clear', 'Limpar Filtros', css_class='btn btn-outline-secondary', onclick="window.location.href = '{}';".format(reverse('patrimonio:gerar_relatorio_patrimonio'))))
 
-# --- Formulário de Ação: Baixa de Patrimônio ---
+
 class BaixaPatrimonioForm(forms.Form):
     """
     Formulário para registrar a baixa de um item de patrimônio.
@@ -127,7 +170,6 @@ class BaixaPatrimonioForm(forms.Form):
             self.fields['data_baixa'].initial = timezone.localdate()
 
 
-# --- Formulário de Ação: Transferência de Patrimônio ---
 class TransferenciaPatrimonioForm(forms.Form):
     """
     Formulário para transferir a localização ou o responsável de um item de patrimônio.
@@ -162,7 +204,7 @@ class TransferenciaPatrimonioForm(forms.Form):
             raise forms.ValidationError("Você deve selecionar uma nova localização ou um novo responsável para a transferência.")
         return cleaned_data
 
-# --- Formulário de Filtro de Movimentação ---
+
 class MovimentacaoFilterForm(forms.Form):
     q = forms.CharField(
         label='Buscar (Item/Obs)',
@@ -170,7 +212,7 @@ class MovimentacaoFilterForm(forms.Form):
         widget=forms.TextInput(attrs={'placeholder': 'Código, Nome ou Observação'})
     )
     tipo_movimentacao = forms.ChoiceField(
-        choices=[('', 'Todos')] + list(MovimentacaoPatrimonio.TIPO_CHOICES), # <-- Agora aponta para TIPO_CHOICES
+        choices=[('', 'Todos')] + list(MovimentacaoPatrimonio.TIPO_CHOICES),
         label='Tipo',
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
@@ -192,10 +234,12 @@ class MovimentacaoFilterForm(forms.Form):
     data_inicio = forms.DateField(
         label='Data Início',
         required=False,
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y']
     )
     data_fim = forms.DateField(
         label='Data Fim',
         required=False,
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y']
     )

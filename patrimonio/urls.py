@@ -28,4 +28,6 @@ urlpatterns = [
     path('inventario/conferencia/', views.relatorio_inventario_conferencia, name='relatorio_inventario_conferencia'),
     path('inventario/conferencia/exportar-csv/', views.exportar_inventario_conferencia_csv, name='exportar_inventario_conferencia_csv'),
     
+    # AJUSTE AQUI: Remova o 'patrimonio/' do path, pois o namespace já o adiciona
+    path('imprimir_etiquetas/', views.imprimir_etiquetas_view, name='imprimir_etiquetas'), 
 ]

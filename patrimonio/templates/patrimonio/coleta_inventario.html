@@ -1,6 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Coleta de Inventário{% endblock %}
+{% block title %}Coleta de Inventário{% endblock title %}
+
+{% block head_extra %}
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        /* Opcional: Estilo para o leitor de QR Code */
+        #qr-reader {
+            width: 100%;
+            max-width: 600px; /* Limita a largura para melhor visualização */
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden; /* Garante que o vídeo não saia dos limites */
+            display: none; /* Inicia oculto */
+        }
+        #qr-reader__scan_region {
+            border-radius: 8px; /* Borda arredondada para a região de scan */
+        }
+        #qr-reader__dashboard {
+            margin-top: 10px;
+        }
+        /* Esconde a caixa de texto de entrada de câmera padrão do html5-qrcode */
+        .html5-qrcode-element {
+            display: none !important;
+        }
+    </style>
+{% endblock head_extra %} {# ATENÇÃO: Alterado para especificar o nome do bloco #}
 
 {% block content %}
 <div class="container mt-5">
@@ -21,15 +47,26 @@
             Buscar Item por Código Patrimonial
         </div>
         <div class="card-body">
-            <form method="GET" action="{% url 'patrimonio:coleta_inventario' %}">
+            <form method="GET" action="{% url 'patrimonio:coleta_inventario' %}" id="coletaForm">
                 <div class="form-group mb-3">
                     <label for="codigo_patrimonial">Código Patrimonial / QR Code:</label>
-                    <input type="text" class="form-control" id="codigo_patrimonial" name="codigo_patrimonial" placeholder="Digite o código ou escaneie o QR Code" value="{{ codigo_patrimonial_preenchido|default:'' }}">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="codigo_patrimonial" name="codigo_patrimonial" placeholder="Digite o código ou escaneie o QR Code" value="{{ codigo_patrimonial_preenchido|default:'' }}">
+                        <button type="button" class="btn btn-secondary" id="scanQrButton">
+                            <i class="fas fa-qrcode"></i> Escanear QR Code
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Buscar</button>
             </form>
         </div>
     </div>
+
+    {# Área onde o leitor de QR Code será exibido #}
+    <div id="qr-reader"></div>
+    <div id="qr-reader-results"></div> {# Opcional: Para exibir resultados do scan temporariamente #}
+    <button type="button" class="btn btn-danger mt-3" id="stopQrButton" style="display: none;">Parar Câmera</button>
+
 
     {% if item_encontrado %}
     <div class="card mt-4">
@@ -59,7 +96,6 @@
                     </select>
                 </div>
                 
-                
                 <div class="form-group mb-3">
                     <label for="novo_responsavel">Novo Responsável (Opcional):</label>
                     <select class="form-control" id="novo_responsavel" name="novo_responsavel">
@@ -69,8 +105,7 @@
                         {% endfor %}
                     </select>
                 </div>
-              
-
+                
                 <div class="form-group mb-3">
                     <label for="observacoes_inventario">Observações do Inventário (Opcional):</label>
                     <textarea class="form-control" id="observacoes_inventario" name="observacoes_inventario" rows="3" placeholder="Ex: Item em bom estado, verificado, etc."></textarea>
@@ -86,4 +121,77 @@
     {% endif %}
 
 </div>
-{% endblock %}
+
+{% endblock content %} {# ATENÇÃO: Alterado para especificar o nome do bloco #}
+
+{% block extra_js %}
+<script>
+    const qrCodeInput = document.getElementById('codigo_patrimonial');
+    const scanQrButton = document.getElementById('scanQrButton');
+    const stopQrButton = document.getElementById('stopQrButton');
+    const qrReaderDiv = document.getElementById('qr-reader');
+    const qrCodeForm = document.getElementById('coletaForm');
+    let html5QrCodeScanner; // Para armazenar a instância do scanner
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Manipula o texto escaneado com sucesso
+        console.log(`Código escaneado: ${decodedText}`, decodedResult);
+        qrCodeInput.value = decodedText; // Preenche o campo de input
+        
+        // Para o scanner após o primeiro scan bem-sucedido
+        if (html5QrCodeScanner) {
+            html5QrCodeScanner.stop().then(() => {
+                console.log("Scanner parado.");
+                qrReaderDiv.style.display = 'none'; // Esconde a área do scanner
+                scanQrButton.style.display = 'inline-block'; // Mostra o botão "Escanear QR Code"
+                stopQrButton.style.display = 'none'; // Esconde o botão "Parar Câmera"
+                qrCodeForm.submit(); // Submete o formulário automaticamente
+            }).catch((err) => {
+                console.error("Erro ao parar o scanner:", err);
+            });
+        }
+    }
+
+    function onScanError(errorMessage) {
+        // Lida com erros do scanner (e.g., sem QR Code detectado)
+        // console.warn(`Erro no scanner: ${errorMessage}`); // Pode ser muito verboso, habilite para depuração
+    }
+
+    scanQrButton.addEventListener('click', () => {
+        qrReaderDiv.style.display = 'block'; // Mostra a área do scanner
+        scanQrButton.style.display = 'none'; // Esconde o botão "Escanear QR Code"
+        stopQrButton.style.display = 'inline-block'; // Mostra o botão "Parar Câmera"
+
+        if (!html5QrCodeScanner) {
+            html5QrCodeScanner = new Html5QrcodeScanner(
+                "qr-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, /* verbose= */ false);
+        }
+        
+        // Inicia o scanner. Preferência de câmera será automática, ou você pode especificar:
+        // html5QrCodeScanner.start({ facingMode: "environment" }, config, onScanSuccess); // Câmera traseira
+        // html5QrCodeScanner.start({ deviceId: { exact: "a-specific-device-id" } }, config, onScanSuccess);
+        html5QrCodeScanner.render(onScanSuccess, onScanError);
+    });
+
+    stopQrButton.addEventListener('click', () => {
+        if (html5QrCodeScanner && html5QrCodeScanner.is
+            Scanning) { // Verifica se o scanner está ativo
+            html5QrCodeScanner.stop().then(() => {
+                console.log("Scanner parado.");
+                qrReaderDiv.style.display = 'none'; // Esconde a área do scanner
+                scanQrButton.style.display = 'inline-block'; // Mostra o botão "Escanear QR Code"
+                stopQrButton.style.display = 'none'; // Esconde o botão "Parar Câmera"
+            }).catch((err) => {
+                console.error("Erro ao parar o scanner:", err);
+            });
+        }
+    });
+
+    // Opcional: Se houver um código preenchido ao carregar a página (e.g., após um scan ou busca manual), submeter
+    // Isso evita que o usuário precise clicar em "Buscar" novamente se já houver um código no campo.
+    // if (qrCodeInput.value.length > 0 && !item_encontrado) { // Verifica se há valor e se não há item encontrado
+    //     qrCodeForm.submit();
+    // }
+
+</script>
+{% endblock extra_js %} {# ATENÇÃO: Alterado para especificar o nome do bloco #}

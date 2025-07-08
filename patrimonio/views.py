@@ -11,6 +11,9 @@ from django.core.paginator import Paginator
 from django.utils import timezone # Para timezone.now() e timedelta
 from datetime import timedelta # Importe timedelta para o filtro de data
 from .models import ItemPatrimonio, CategoriaPatrimonio, LocalizacaoPatrimonio, MovimentacaoPatrimonio
+from .filters import ItemPatrimonioFilter
+import base64 
+from django.views.decorators.http import require_POST
 
 import qrcode
 from io import BytesIO
@@ -57,76 +60,91 @@ def gerar_qrcode_patrimonio(request, item_id):
 
 @login_required
 def coleta_inventario(request):
-    """
-    View para a tela de coleta de inventário via QR Code ou busca manual.
-    Inicialmente, exibirá um formulário para buscar itens.
-    """
     item_encontrado = None
-    codigo_patrimonial = request.GET.get('codigo_patrimonial') # Pega o código da URL (se veio do QR Code)
+    # Pega o código patrimonial da requisição GET (se existir)
+    codigo_patrimonial_preenchido = request.GET.get('codigo_patrimonial', '').strip() 
     
-    if codigo_patrimonial:
+    if codigo_patrimonial_preenchido:
         try:
-            item_encontrado = ItemPatrimonio.objects.get(codigo_patrimonial=codigo_patrimonial)
-            messages.info(request, f'Item "{item_encontrado.nome}" (Código: {codigo_patrimonial}) encontrado. Você pode registrar sua presença.')
+            # Tenta encontrar o item pelo código patrimonial
+            item_encontrado = ItemPatrimonio.objects.get(codigo_patrimonial__iexact=codigo_patrimonial_preenchido)
+            messages.success(request, f"Item '{item_encontrado.nome}' ({item_encontrado.codigo_patrimonial}) encontrado.")
         except ItemPatrimonio.DoesNotExist:
-            messages.error(request, f'Item com código patrimonial "{codigo_patrimonial}" não encontrado.')
+            messages.error(request, f"Nenhum item encontrado com o código: {codigo_patrimonial_preenchido}.")
+            item_encontrado = None # Garante que a variável seja None se não encontrar
+        except Exception as e:
+            # Captura outros erros inesperados durante a busca
+            messages.error(request, f"Ocorreu um erro ao buscar o item: {e}")
+            item_encontrado = None
+
+    # Obter todas as localizações para o campo 'Nova Localização'
+    localizacoes = LocalizacaoPatrimonio.objects.all().order_by('nome')
     
-    localizacoes = LocalizacaoPatrimonio.objects.all() # Para preencher o select de nova localização
+    # Obter usuários disponíveis para o campo 'Novo Responsável'
+    # Você pode filtrar esses usuários se necessário (ex: apenas funcionários)
+    users_disponiveis = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
 
     context = {
+        'codigo_patrimonial_preenchido': codigo_patrimonial_preenchido, # Para manter o campo preenchido após a busca
         'item_encontrado': item_encontrado,
-        'codigo_patrimonial_preenchido': codigo_patrimonial, # Para manter o campo preenchido no formulário
-        'localizacoes': localizacoes, # Passa as localizações para o template
+        'localizacoes': localizacoes,
+        'users_disponiveis': users_disponiveis,
     }
     return render(request, 'patrimonio/coleta_inventario.html', context)
 
 
+# Exemplo de como seria a view confirmar_inventario (se você já não a tem)
+# Ela é chamada quando o formulário de 'Registrar Presença / Atualizar Dados' é submetido
 @login_required
+@require_POST # Garante que esta view só aceita requisições POST
 def confirmar_inventario(request):
-    """
-    View para confirmar a presença ou atualização de um item em inventário.
-    Processa os dados enviados do formulário de coleta.
-    """
-    if request.method == 'POST':
-        item_id = request.POST.get('item_id')
-        nova_localizacao_id = request.POST.get('nova_localizacao')
-        # novo_responsavel_id = request.POST.get('novo_responsavel') # Descomente se for usar
-        observacoes_inventario = request.POST.get('observacoes_inventario', '')
+    item_id = request.POST.get('item_id')
+    nova_localizacao_id = request.POST.get('nova_localizacao')
+    novo_responsavel_id = request.POST.get('novo_responsavel')
+    observacoes_inventario = request.POST.get('observacoes_inventario')
 
+    try:
         item = get_object_or_404(ItemPatrimonio, pk=item_id)
         
-        # Atualiza a data da última atualização para o item, indicando que foi inventariado
-        item.data_ultima_atualizacao = timezone.now()
-        
-        # Opcional: Atualizar localização se houver dados e eles mudaram
-        if nova_localizacao_id and item.localizacao_id != int(nova_localizacao_id):
-            nova_localizacao = get_object_or_404(LocalizacaoPatrimonio, pk=nova_localizacao_id)
-            item.localizacao = nova_localizacao
-            messages.info(request, f'Localização de "{item.nome}" atualizada para "{nova_localizacao.nome}".')
-        
-        # Se você deseja atualizar o responsável:
-        # if novo_responsavel_id and item.responsavel_atual_id != int(novo_responsavel_id):
-        #     novo_responsavel = get_object_or_404(User, pk=novo_responsavel_id) # 'User' já foi importado no topo
-        #     item.responsavel_atual = novo_responsavel
-        #     messages.info(request, f'Responsável por "{item.nome}" atualizado para "{novo_responsavel.get_full_name()}".')
+        # Registrar a movimentação antes de atualizar o item, se houver mudança
+        if nova_localizacao_id and int(nova_localizacao_id) != item.localizacao.id:
+            nova_localizacao_obj = get_object_or_404(LocalizacaoPatrimonio, pk=nova_localizacao_id)
+            MovimentacaoPatrimonio.objects.create(
+                item=item,
+                tipo_movimentacao='TRANSFERENCIA', # Ou 'INVENTARIO_MOV' se for um tipo específico
+                data_movimentacao=timezone.now(),
+                localizacao_origem=item.localizacao,
+                localizacao_destino=nova_localizacao_obj,
+                observacoes=f"Transferência durante coleta de inventário. Nova localização: {nova_localizacao_obj.nome}. {observacoes_inventario}",
+                realizada_por=request.user
+            )
+            item.localizacao = nova_localizacao_obj
+            messages.info(request, f"Localização de '{item.nome}' atualizada para {nova_localizacao_obj.nome}.")
 
-        # Registra uma movimentação de "Inventário"
-        MovimentacaoPatrimonio.objects.create(
-            item=item,
-            tipo_movimentacao='INVENTARIO', # Certifique-se que este tipo existe no seu modelo MovimentacaoPatrimonio
-            data_movimentacao=timezone.now(),
-            localizacao_origem=item.localizacao, # A localização que o item estava
-            localizacao_destino=item.localizacao, # A localização para onde foi ou a mesma
-            observacoes=f"Item inventariado. {observacoes_inventario}",
-            usuario_registro=request.user
-        )
+        if novo_responsavel_id and int(novo_responsavel_id) != (item.responsavel_atual.id if item.responsavel_atual else None):
+            novo_responsavel_obj = get_object_or_404(User, pk=novo_responsavel_id)
+            # Você pode registrar uma movimentação específica para mudança de responsável, se tiver um tipo
+            # ou incluir nas observações da movimentação de localização se for a única.
+            item.responsavel_atual = novo_responsavel_obj
+            messages.info(request, f"Responsável de '{item.nome}' atualizado para {novo_responsavel_obj.get_full_name()}.")
         
+        # Atualizar a data da última atualização para registrar a presença no inventário
+        item.data_ultima_atualizacao = timezone.now()
+        item.observacoes = observacoes_inventario # Ou adicionar/concatenar a uma observação de inventário
         item.save()
-        messages.success(request, f'Item "{item.nome}" registrado no inventário com sucesso!')
-        return redirect('patrimonio:coleta_inventario') # Redireciona de volta para a tela de coleta para o próximo item
-    
-    messages.error(request, 'Requisição inválida para confirmação de inventário.')
-    return redirect('patrimonio:coleta_inventario')
+
+        messages.success(request, f"Inventário do item '{item.nome}' confirmado e dados atualizados com sucesso!")
+        
+    except ItemPatrimonio.DoesNotExist:
+        messages.error(request, "Item não encontrado para atualização.")
+    except LocalizacaoPatrimonio.DoesNotExist:
+        messages.error(request, "Nova localização inválida.")
+    except User.DoesNotExist:
+        messages.error(request, "Novo responsável inválido.")
+    except Exception as e:
+        messages.error(request, f"Ocorreu um erro inesperado ao confirmar o inventário: {e}")
+
+    return redirect('patrimonio:coleta_inventario') # Redireciona de volta para a página de coleta
 
 
 @login_required
@@ -373,41 +391,24 @@ def listar_movimentacoes(request):
 @login_required
 # @permission_required('patrimonio.view_itempatrimonio', raise_exception=True) # Exemplo de permissão
 def gerar_relatorio_patrimonio(request):
-    itens_patrimonio = ItemPatrimonio.objects.all().order_by('codigo_patrimonial')
+    # Inicializa o FilterSet com os dados da requisição GET e o queryset base
+    item_filter = ItemPatrimonioFilter(request.GET, queryset=ItemPatrimonio.objects.all().order_by('codigo_patrimonial'))
+    
+    # O queryset filtrado é acessível via .qs
+    itens_patrimonio = item_filter.qs 
 
-    filter_form = PatrimonioFilterForm(request.GET)
-    if filter_form.is_valid():
-        search_query = filter_form.cleaned_data.get('search_query')
-        categoria = filter_form.cleaned_data.get('categoria')
-        localizacao = filter_form.cleaned_data.get('localizacao')
-        estado_conservacao = filter_form.cleaned_data.get('estado_conservacao')
-        status = filter_form.cleaned_data.get('status')
-        data_aquisicao_inicio = filter_form.cleaned_data.get('data_aquisicao_inicio')
-        data_aquisicao_fim = filter_form.cleaned_data.get('data_aquisicao_fim')
-
-        if search_query:
-            itens_patrimonio = itens_patrimonio.filter(
-                Q(nome__icontains=search_query) |
-                Q(codigo_patrimonial__icontains=search_query) |
-                Q(numero_serie__icontains=search_query) |
-                Q(descricao__icontains=search_query)
-            )
-        if categoria:
-            itens_patrimonio = itens_patrimonio.filter(categoria=categoria)
-        if localizacao:
-            itens_patrimonio = itens_patrimonio.filter(localizacao=localizacao)
-        if estado_conservacao:
-            itens_patrimonio = itens_patrimonio.filter(estado_conservacao=estado_conservacao)
-        if status:
-            itens_patrimonio = itens_patrimonio.filter(status=status)
-        if data_aquisicao_inicio:
-            itens_patrimonio = itens_patrimonio.filter(data_aquisicao__gte=data_aquisicao_inicio)
-        if data_aquisicao_fim:
-            itens_patrimonio = itens_patrimonio.filter(data_aquisicao__lte=data_aquisicao_fim)
+    # O formulário que o crispy_forms precisa para renderizar os campos é acessível via .form
+    filter_form = item_filter.form 
+    
+    # Os prints de depuração podem ser removidos, mas se quiser mantê-los para verificação:
+    # if not filter_form.is_valid():
+    #     print("DEBUG: Erros de validação do filter_form:", filter_form.errors)
+    # else:
+    #     print("DEBUG: filter_form é válido. Dados:", filter_form.cleaned_data)
 
     context = {
         'itens_patrimonio': itens_patrimonio,
-        'filter_form': filter_form,
+        'filter_form': filter_form, # Agora filter_form é uma instância de django.forms.Form
         'title': 'Relatório de Patrimônio',
         'active_page': 'relatorio_patrimonio',
     }
@@ -674,6 +675,69 @@ def relatorio_inventario_conferencia(request):
         'title': 'Relatório de Conferência de Inventário',
     }
     return render(request, 'patrimonio/relatorio_inventario_conferencia.html', context)
+
+# - - --- Etiquetas Patrimonio -----
+
+@login_required
+def imprimir_etiquetas_view(request):
+    item_ids_str = request.GET.get('ids', '')
+    if not item_ids_str:
+        messages.error(request, "Nenhum item selecionado para impressão.")
+        # Redireciona de volta para a página de relatório se nenhum ID for fornecido
+        return redirect('relatorio_patrimonio') 
+
+    # Converte a string de IDs para uma lista de inteiros
+    item_ids = [int(item_id) for item_id in item_ids_str.split(',') if item_id.isdigit()]
+    
+    # Busca os itens de patrimônio selecionados
+    itens_para_imprimir = ItemPatrimonio.objects.filter(id__in=item_ids)
+
+    etiquetas_data = []
+    for item in itens_para_imprimir:
+        qr_image_base64 = None
+        
+        # O dado que será codificado no QR Code. 
+        # Sugestão: a URL completa para a página de detalhes do item no seu sistema.
+        # Substitua 'patrimonio_detalhe' pelo nome da URL para a página de detalhes de um único item.
+        # Se você não tem uma URL de detalhe, pode usar o código patrimonial: f"Código: {item.codigo_patrimonial}"
+        # Exemplo: Se você tem uma URL como path('patrimonio/<int:item_id>/', views.detalhe_patrimonio, name='patrimonio_detalhe'), use 'patrimonio_detalhe'
+        try:
+            # Tenta gerar a URL para o detalhe do item. Adapte 'patrimonio_detalhe' ao seu urls.py
+            qr_data = request.build_absolute_uri(reverse('detalhe_patrimonio', args=[item.id])) 
+        except Exception:
+            # Se a URL não puder ser gerada (ex: URL 'detalhe_patrimonio' não existe), use o código patrimonial
+            qr_data = f"Código: {item.codigo_patrimonial}"
+
+        # Geração do QR Code
+        qr = qrcode.QRCode(
+            version=1, # Tamanho do QR Code (1 a 40)
+            error_correction=qrcode.constants.ERROR_CORRECT_L, # Nível de correção de erro (L, M, Q, H)
+            box_size=10, # Tamanho de cada "caixa" do QR Code
+            border=4, # Largura da borda branca
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # Salva a imagem do QR Code em memória e codifica para Base64
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        qr_image_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        etiquetas_data.append({
+            'nome': item.nome,
+            'codigo_patrimonial': item.codigo_patrimonial,
+            'qr_code_base64': qr_image_base64,
+        })
+    
+    context = {
+        'etiquetas_data': etiquetas_data,
+    }
+    return render(request, 'patrimonio/imprimir_etiquetas.html', context)
+
+# - - --- Fim Etiquetas Patrimonio -----
+
+
 
 @login_required
 def exportar_inventario_conferencia_csv(request):
