@@ -1,5 +1,3 @@
-# pat/meu_projeto_admin/settings.py
-
 """
 Django settings for meu_projeto_admin project.
 
@@ -14,27 +12,35 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-from decouple import config
+# Importações ajustadas para usar Config e RepositoryEnv do decouple
+from decouple import Config, RepositoryEnv
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Força a leitura do arquivo .env no BASE_DIR
+# O arquivo .env deve estar no mesmo nível da pasta meu_projeto_admin e manage.py
+env_path = os.path.join(BASE_DIR, '.env')
+config = Config(RepositoryEnv(env_path))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-+87td)_3hi3@7sk@p%1%-udgo6s+i_%p22_ouu(w%w&u6*+dp2'
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False # Mantenha como False para produção
+DEBUG = config('DEBUG', default=False, cast=bool) # Lê do .env e converte para booleano
 
-# ALtere para a URL do seu Render e adicione localhost para desenvolvimento
-ALLOWED_HOSTS = ['pat-gmhm.onrender.com', 'localhost', '127.0.0.1']
+# --- AJUSTE DEFINITIVO AQUI: ALLOWED_HOSTS para testes ---
+# Esta configuração força o ALLOWED_HOSTS para '*' (qualquer host)
+# SEMPRE, independente do DEBUG, para garantir que funcione em ambientes de teste.
+# !!! ATENÇÃO: ESSA É UMA CONFIGURAÇÃO DE TESTE/DESENVOLVIMENTO.
+# PARA PRODUÇÃO REAL, VOCÊ DEVE LISTAR EXPLICITAMENTE SEUS DOMÍNIOS.
+ALLOWED_HOSTS = ['*'] # Permite qualquer host para fins de teste
+
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,22 +48,23 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',
+    'django.contrib.humanize', # Útil para formatação de números
     'usuarios',
     'estoque',
     'patrimonio',
     'fornecedores',
     'clientes',
-    'epi',
+    'epi', # App que contém o modelo Colaborador
+    'rh',
     'crispy_forms',
     'crispy_bootstrap5',
     'financeiro',
-    'django_filters',
-    'widget_tweaks',
+    'django_filters', # Para filtragem avançada de dados
+    'widget_tweaks', # Para personalizar widgets de formulário no template
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware', # ADICIONADO AQUI, NO TOPO
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -65,6 +72,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # --- Middleware de log com o nome da classe corrigido ---
+    'usuarios.middleware.RequestLogMiddleware', # <--- CORRIGIDO AQUI!
 ]
 
 ROOT_URLCONF = 'meu_projeto_admin.urls'
@@ -79,7 +88,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.template.context_processors.messages',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -92,10 +101,16 @@ WSGI_APPLICATION = 'meu_projeto_admin.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL'), # Lendo a URL da variável de ambiente DATABASE_URL no .env
-        conn_max_age=600
-    )
+    'default': {
+        **dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
+        # A opção 'DISABLE_SERVER_SIDE_CURSORS' não é uma opção de conexão direta do psycopg2
+        # e está causando o erro. Remova-a daqui.
+        # Se precisar de um timeout de statement, você pode adicionar 'options' aqui,
+        # mas 'DISABLE_SERVER_SIDE_CURSORS' não vai aqui.
+        # 'OPTIONS': {
+        #     'options': '-c statement_timeout=10000', # Exemplo de opção VÁLIDA para o driver
+        # },
+    }
 }
 
 
@@ -123,11 +138,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
-USE_I18N = True
-USE_TZ = True
+USE_I18N = True # Habilita o sistema de tradução do Django
+USE_TZ = True   # Habilita suporte a fusos horários
+
 
 # --- Configurações de Localização (L10N) para o Brasil ---
-USE_L10N = True
+USE_L10N = True # Habilita formatação localizada de números e datas
 DECIMAL_SEPARATOR = ','
 USE_THOUSAND_SEPARATORS = True
 THOUSAND_SEPARATOR = '.'
@@ -140,22 +156,29 @@ NUMBER_GROUPING = (3, 0)
 
 STATIC_URL = 'static/'
 
-# Adicione estas linhas para configurar o STATICFILES_DIRS e STATIC_ROOT
-# STATICFILES_DIRS: Lista de pastas onde o Django irá procurar arquivos estáticos
+# STATICFILES_DIRS: Lista de pastas adicionais onde o Django irá procurar arquivos estáticos
 # em tempo de desenvolvimento (além das pastas 'static' dentro de cada app).
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"), # Usando os.path.join para compatibilidade
+    os.path.join(BASE_DIR, "static"),
 ]
+
 # STATIC_ROOT: Pasta onde 'python manage.py collectstatic' vai copiar todos os arquivos estáticos
 # de todos os apps e STATICFILES_DIRS, para ser servido em produção.
+# Esta pasta deve ser vazia antes de rodar collectstatic.
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-# Adicione esta linha para configurar o Whitenoise
+# Configuração para servir arquivos estáticos de forma eficiente em produção via Whitenoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
-# --- Configurações para arquivos de Mídia (uploads de usuários, como PDFs e assinaturas) ---
+# --- Configurações para arquivos de Mídia (uploads de usuários, como fotos, PDFs) ---
+# MEDIA_URL: O prefixo da URL para acessar arquivos de mídia no navegador.
+# Ex: se uma foto estiver em media/fotos/minha_foto.jpg, a URL será /media/fotos/minha_foto.jpg
 MEDIA_URL = '/media/'
+
+# MEDIA_ROOT: O caminho absoluto no sistema de arquivos onde o Django irá armazenar
+# fisicamente os arquivos de mídia enviados pelos usuários.
+# IMPORTANTE: Crie esta pasta na raiz do seu projeto se ela não existir.
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # -----------------------------------------------------------------------------------------
 
