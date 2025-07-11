@@ -143,43 +143,51 @@
     }
 
     scanQrButton.addEventListener('click', () => {
-        qrReaderDiv.style.display = 'block';
-        scanQrButton.style.display = 'none';
-        stopQrButton.style.display = 'inline-block';
+        navigator.mediaDevices.getUserMedia({ video: true }).then(() => {
+            qrReaderDiv.style.display = 'block';
+            scanQrButton.style.display = 'none';
+            stopQrButton.style.display = 'inline-block';
 
-        html5QrCode = new Html5Qrcode("qr-reader");
+            html5QrCode = new Html5Qrcode("qr-reader");
 
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) {
-                const rearCamera = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira'));
-                const cameraId = rearCamera ? rearCamera.id : devices[0].id;
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    const rearCamera = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira'));
+                    const cameraId = rearCamera ? rearCamera.id : devices[0].id;
 
-                html5QrCode.start(
-                    cameraId,
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.777778,
-                        disableFlip: false
-                    },
-                    onScanSuccess,
-                    onScanError
-                ).catch(err => {
-                    console.error("Erro ao iniciar a câmera:", err);
-                    alert("Erro ao acessar a câmera. Verifique permissões do navegador.");
+                    html5QrCode.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.777778,
+                            disableFlip: false
+                        },
+                        onScanSuccess,
+                        onScanError
+                    ).catch(err => {
+                        console.error("Erro ao iniciar a câmera:", err);
+                        alert("Erro ao acessar a câmera. Verifique permissões do navegador.");
+                        qrReaderDiv.style.display = 'none';
+                        scanQrButton.style.display = 'inline-block';
+                        stopQrButton.style.display = 'none';
+                    });
+                } else {
+                    alert("Nenhuma câmera encontrada.");
                     qrReaderDiv.style.display = 'none';
                     scanQrButton.style.display = 'inline-block';
                     stopQrButton.style.display = 'none';
-                });
-            } else {
-                alert("Nenhuma câmera encontrada.");
+                }
+            }).catch(err => {
+                console.error("Erro ao obter lista de câmeras:", err);
+                alert("Erro ao verificar as câmeras.");
                 qrReaderDiv.style.display = 'none';
                 scanQrButton.style.display = 'inline-block';
                 stopQrButton.style.display = 'none';
-            }
+            });
         }).catch(err => {
-            console.error("Erro ao obter lista de câmeras:", err);
-            alert("Erro ao verificar as câmeras.");
+            console.error("Permissão negada para acessar a câmera:", err);
+            alert("Permissão para usar a câmera foi negada. Habilite no navegador e recarregue a página.");
             qrReaderDiv.style.display = 'none';
             scanQrButton.style.display = 'inline-block';
             stopQrButton.style.display = 'none';
