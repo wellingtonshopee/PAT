@@ -3,7 +3,6 @@
 {% block title %}Coleta de Inventário{% endblock title %}
 
 {% block head_extra %}
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         #qr-reader {
             width: 100%;
@@ -86,7 +85,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div class="form-group mb-3">
                     <label for="novo_responsavel">Novo Responsável (Opcional):</label>
                     <select class="form-control" id="novo_responsavel" name="novo_responsavel">
@@ -96,7 +95,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div class="form-group mb-3">
                     <label for="observacoes_inventario">Observações do Inventário (Opcional):</label>
                     <textarea class="form-control" id="observacoes_inventario" name="observacoes_inventario" rows="3" placeholder="Ex: Item em bom estado, verificado, etc."></textarea>
@@ -114,6 +113,9 @@
 {% endblock content %}
 
 {% block extra_js %}
+<!-- Biblioteca deve ser carregada antes do uso -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
 <script>
     const qrCodeInput = document.getElementById('codigo_patrimonial');
     const scanQrButton = document.getElementById('scanQrButton');
@@ -122,77 +124,67 @@
     const qrCodeForm = document.getElementById('coletaForm');
     let html5QrCode;
 
-    function onScanSuccess(decodedText) {
-        qrCodeInput.value = decodedText;
-        if (html5QrCode) {
-            html5QrCode.stop().then(() => {
-                html5QrCode.clear();
-                qrReaderDiv.style.display = 'none';
-                scanQrButton.style.display = 'inline-block';
-                stopQrButton.style.display = 'none';
-                qrCodeForm.submit();
-            }).catch((err) => {
-                console.error("Erro ao parar o scanner:", err);
-                alert("Erro ao parar a câmera.");
-            });
+    async function requestCameraPermission() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream.getTracks().forEach(track => track.stop());
+            return true;
+        } catch (err) {
+            console.error("Permissão negada ou erro ao acessar a câmera:", err);
+            alert("Permissão para acessar a câmera foi negada ou não está disponível.");
+            return false;
         }
     }
 
-    function onScanError(errorMessage) {
-        console.warn(errorMessage);
-    }
+    async function startCamera() {
+        const permissionGranted = await requestCameraPermission();
+        if (!permissionGranted) return;
 
-    scanQrButton.addEventListener('click', () => {
-        navigator.mediaDevices.getUserMedia({ video: true }).then(() => {
+        try {
             qrReaderDiv.style.display = 'block';
             scanQrButton.style.display = 'none';
             stopQrButton.style.display = 'inline-block';
 
             html5QrCode = new Html5Qrcode("qr-reader");
 
-            Html5Qrcode.getCameras().then(devices => {
-                if (devices && devices.length) {
-                    const rearCamera = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira'));
-                    const cameraId = rearCamera ? rearCamera.id : devices[0].id;
+            const devices = await Html5Qrcode.getCameras();
+            if (!devices || devices.length === 0) {
+                alert("Nenhuma câmera foi encontrada.");
+                return;
+            }
 
-                    html5QrCode.start(
-                        cameraId,
-                        {
-                            fps: 10,
-                            qrbox: { width: 250, height: 250 },
-                            aspectRatio: 1.777778,
-                            disableFlip: false
-                        },
-                        onScanSuccess,
-                        onScanError
-                    ).catch(err => {
-                        console.error("Erro ao iniciar a câmera:", err);
-                        alert("Erro ao acessar a câmera. Verifique permissões do navegador.");
+            const cameraId = devices.find(d => d.label.toLowerCase().includes('back'))?.id || devices[0].id;
+
+            await html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.777778,
+                    disableFlip: false
+                },
+                (decodedText) => {
+                    const cleanText = decodedText.replace(/^Código:\s*/i, '');
+                    qrCodeInput.value = cleanText;
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
                         qrReaderDiv.style.display = 'none';
                         scanQrButton.style.display = 'inline-block';
                         stopQrButton.style.display = 'none';
+                        qrCodeForm.submit();
                     });
-                } else {
-                    alert("Nenhuma câmera encontrada.");
-                    qrReaderDiv.style.display = 'none';
-                    scanQrButton.style.display = 'inline-block';
-                    stopQrButton.style.display = 'none';
+                },
+                (err) => {
+                    console.warn("Erro na leitura do QR Code:", err);
                 }
-            }).catch(err => {
-                console.error("Erro ao obter lista de câmeras:", err);
-                alert("Erro ao verificar as câmeras.");
-                qrReaderDiv.style.display = 'none';
-                scanQrButton.style.display = 'inline-block';
-                stopQrButton.style.display = 'none';
-            });
-        }).catch(err => {
-            console.error("Permissão negada para acessar a câmera:", err);
-            alert("Permissão para usar a câmera foi negada. Habilite no navegador e recarregue a página.");
-            qrReaderDiv.style.display = 'none';
-            scanQrButton.style.display = 'inline-block';
-            stopQrButton.style.display = 'none';
-        });
-    });
+            );
+        } catch (error) {
+            console.error("Erro ao iniciar a câmera:", error);
+            alert("Erro ao acessar a câmera. Verifique permissões e se a câmera está disponível.");
+        }
+    }
+
+    scanQrButton.addEventListener('click', startCamera);
 
     stopQrButton.addEventListener('click', () => {
         if (html5QrCode) {
