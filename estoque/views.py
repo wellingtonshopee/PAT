@@ -7,14 +7,14 @@ from django.db import transaction # Importe para operações atômicas
 from django.db.models import Q, F
 from .models import ItemEstoque, MovimentacaoEstoque
 from .forms import ItemEstoqueFilterForm, ItemEstoqueForm, EntradaEstoqueForm, SaidaEstoqueForm  # Importe EntradaEstoqueForm
+from django.core.paginator import Paginator
 
 # ...
 
 @login_required
 def listar_itens_estoque(request):
-    # Lógica de filtro existente
     filter_form = ItemEstoqueFilterForm(request.GET)
-    itens = ItemEstoque.objects.all()
+    itens = ItemEstoque.objects.all().select_related('categoria', 'localizacao')  # Otimiza com select_related
 
     if filter_form.is_valid():
         search_query = filter_form.cleaned_data.get('search_query')
@@ -23,29 +23,32 @@ def listar_itens_estoque(request):
 
         if search_query:
             itens = itens.filter(
-                Q(nome__icontains=search_query) | # <--- MUDANÇA AQUI: de models.Q para Q
-                Q(descricao__icontains=search_query) | # <--- MUDANÇA AQUI: de models.Q para Q
-                Q(codigo_interno__icontains=search_query) # <--- MUDANÇA AQUI: de models.Q para Q
+                Q(nome__icontains=search_query) |
+                Q(descricao__icontains=search_query) |
+                Q(codigo_interno__icontains=search_query)
             )
         if categoria:
             itens = itens.filter(categoria=categoria)
         if localizacao:
             itens = itens.filter(localizacao=localizacao)
 
-    # Lógica para filtro de status de estoque
     estoque_status = request.GET.get('estoque_status')
     if estoque_status == 'abaixo_minimo':
-        # MUDANÇA AQUI: de models.F para F
         itens = itens.filter(quantidade__lte=F('estoque_minimo'), quantidade__gt=0)
         messages.info(request, "Exibindo apenas itens com estoque abaixo do mínimo.")
     elif estoque_status == 'zerado':
         itens = itens.filter(quantidade=0)
         messages.info(request, "Exibindo apenas itens com estoque zerado.")
 
-    itens = itens.order_by('nome') # Garante uma ordenação padrão
+    itens = itens.order_by('nome')
+
+    # Paginação (25 itens por página)
+    paginator = Paginator(itens, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'itens': itens,
+        'itens': page_obj,
         'filter_form': filter_form,
         'active_page': 'estoque',
         'estoque_status': estoque_status,

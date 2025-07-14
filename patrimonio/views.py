@@ -14,6 +14,7 @@ from .models import ItemPatrimonio, CategoriaPatrimonio, LocalizacaoPatrimonio, 
 from .filters import ItemPatrimonioFilter
 import base64 
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator # Importe o Paginator
 
 import qrcode
 from io import BytesIO
@@ -149,7 +150,15 @@ def confirmar_inventario(request):
 
 @login_required
 def listar_itens_patrimonio(request):
-    itens_patrimonio = ItemPatrimonio.objects.all()
+    # Removido 'estado_conservacao' e 'status' de select_related
+    # Porque eles são campos com choices no próprio modelo, não ForeignKeys.
+    itens_patrimonio = ItemPatrimonio.objects.all().select_related(
+        'categoria',
+        'localizacao',
+        'responsavel_atual', # Adicionado, se você exibe o responsável
+        # 'usuario_registro', # Adicione se você exibe o usuário que registrou
+    )
+
     filter_form = PatrimonioFilterForm(request.GET)
 
     if filter_form.is_valid():
@@ -183,8 +192,13 @@ def listar_itens_patrimonio(request):
 
     itens_patrimonio = itens_patrimonio.order_by('nome')
 
+    # Adicionar Paginação
+    paginator = Paginator(itens_patrimonio, 10)  # Mostra 10 itens por página (ajuste conforme necessário)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'itens_patrimonio': itens_patrimonio,
+        'itens_patrimonio': page_obj,  # Passamos o objeto da página
         'filter_form': filter_form,
         'active_page': 'patrimonio',
     }

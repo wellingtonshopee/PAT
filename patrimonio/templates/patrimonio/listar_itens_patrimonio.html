@@ -2,7 +2,7 @@
 {% extends 'base.html' %} {# Estende o template base #}
 {% load widget_tweaks %} {# Carrega o widget_tweaks para estilizar o formulário #}
 {% load crispy_forms_tags %} {# Adicione crispy_forms_tags se estiver usando Crispy Forms para o filtro #}
-{% load patrimonio_extras %}
+{% load patrimonio_extras %} {# Seu filtro currency_br está aqui, certo? #}
 
 {% block title %}Patrimônio - Itens Registrados{% endblock %}
 
@@ -39,6 +39,14 @@
     .table-responsive th:last-child,
     .table-responsive td:last-child {
         min-width: 180px; /* Largura mínima para a coluna de ações, ajuste conforme necessário */
+    }
+
+    /* Estilos para os badges de status */
+    .badge {
+        padding: 0.4em 0.6em;
+        border-radius: 0.25rem;
+        font-size: 0.75em;
+        font-weight: 600;
     }
 </style>
 {% endblock %}
@@ -102,7 +110,7 @@
     </p>
 
     {# Tabela de Itens de Patrimônio #}
-    {% if itens_patrimonio %}
+    {% if itens_patrimonio.object_list %} {# Usar object_list para verificar se há itens na página atual #}
         {# ALTERADO: shadow-sm rounded movido para o div table-responsive #}
         <div class="table-responsive shadow-sm rounded"> 
             <table class="table table-hover table-bordered bg-white table-sm"> {# Removido shadow-sm rounded daqui #}
@@ -123,7 +131,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in itens_patrimonio %}
+                    {% for item in itens_patrimonio %} {# Agora você itera sobre o page_obj #}
                         <tr>
                             <td>
                                 <a href="{% url 'patrimonio:detalhar_item_patrimonio' item.pk %}">{{ item.nome }}</a>
@@ -166,7 +174,7 @@
                                     {% endif %}
                                     
                                     <form action="{% url 'patrimonio:excluir_item_patrimonio' item.pk %}" method="post" style="display:inline;" 
-                                            onsubmit="return confirm('Tem certeza que deseja excluir o item de patrimônio \'{{ item.nome }}\'? Esta ação é irreversível e removerá também todas as movimentações associadas.');">
+                                        onsubmit="return confirm('Tem certeza que deseja excluir o item de patrimônio \'{{ item.nome }}\'? Esta ação é irreversível e removerá também todas as movimentações associadas.');">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-warning" title="Excluir">
                                             <i class="fas fa-times-circle"></i> Excluir
@@ -179,9 +187,49 @@
                 </tbody>
             </table>
         </div>
+
+        {# Controles de Paginação #}
+        <nav aria-label="Paginação da Lista de Patrimônio" class="mt-4">
+            <ul class="pagination justify-content-center flex-wrap"> {# flex-wrap para melhor responsividade #}
+                {% if itens_patrimonio.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&{{ request.GET.urlencode }}" aria-label="Primeira">
+                            <span aria-hidden="true">&laquo;</span> Primeira
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens_patrimonio.previous_page_number }}&{{ request.GET.urlencode }}" aria-label="Anterior">
+                            <span aria-hidden="true">&lsaquo;</span> Anterior
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% comment %} Loop para exibir um subconjunto de números de página próximos à página atual {% endcomment %}
+                {% for num in itens_patrimonio.paginator.page_range %}
+                    {% if itens_patrimonio.number == num %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > itens_patrimonio.number|add:'-3' and num < itens_patrimonio.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if itens_patrimonio.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens_patrimonio.next_page_number }}&{{ request.GET.urlencode }}" aria-label="Próxima">
+                            Próxima <span aria-hidden="true">&rsaquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens_patrimonio.paginator.num_pages }}&{{ request.GET.urlencode }}" aria-label="Última">
+                            Última <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
     {% else %}
         <div class="alert alert-info" role="alert">
-            Nenhum item de patrimônio encontrado.
+            Nenhum item de patrimônio encontrado com os filtros aplicados.
         </div>
     {% endif %}
 </div>

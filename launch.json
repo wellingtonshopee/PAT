@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Django",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "runserver",
+                "--noreload", // Importante: evita que o servidor reinicie sozinho, atrapalhando o debug.
+                "8000"        // Opcional: especifica a porta se você usa uma diferente.
+            ],
+            "django": true,     // Ativa funcionalidades de debug específicas para Django.
+            "justMyCode": true, // Recomendado: o debugger pula código de bibliotecas de terceiros, focando no seu código.
+            "cwd": "${workspaceFolder}" // Garante que o comando seja executado na pasta do projeto.
+        }
+    ]
+}

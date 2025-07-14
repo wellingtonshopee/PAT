@@ -101,7 +101,16 @@ WSGI_APPLICATION = 'meu_projeto_admin.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
+    'default': {
+        **dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
+        # A opção 'DISABLE_SERVER_SIDE_CURSORS' não é uma opção de conexão direta do psycopg2
+        # e está causando o erro. Remova-a daqui.
+        # Se precisar de um timeout de statement, você pode adicionar 'options' aqui,
+        # mas 'DISABLE_SERVER_SIDE_CURSORS' não vai aqui.
+        # 'OPTIONS': {
+        #     'options': '-c statement_timeout=10000', # Exemplo de opção VÁLIDA para o driver
+        # },
+    }
 }
 
 

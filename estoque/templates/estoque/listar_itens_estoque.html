@@ -41,7 +41,6 @@
         <a href="{% url 'listar_itens_estoque' %}?estoque_status=zerado" class="btn btn-danger">Ver Itens Zerados</a>
     </p>
 
-    {# Tabela de Itens de Estoque (o restante do código da tabela) ... #}
     {% if itens %}
         <div class="table-responsive">
             <table class="table table-hover table-bordered bg-white shadow-sm rounded">
@@ -90,6 +89,46 @@
                 </tbody>
             </table>
         </div>
+
+        {# Paginação #}
+        {% if itens.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {# Link para página anterior #}
+                {% if itens.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens.previous_page_number }}{{ request.GET.urlencode|cut:'page='|add:'&' }}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+
+                {# Links para as páginas individuais #}
+                {% for num in itens.paginator.page_range %}
+                    {% if itens.number == num %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{{ request.GET.urlencode|cut:'page='|add:'&' }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {# Link para próxima página #}
+                {% if itens.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens.next_page_number }}{{ request.GET.urlencode|cut:'page='|add:'&' }}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     {% else %}
         <div class="alert alert-info" role="alert">
             Nenhum item de estoque encontrado.

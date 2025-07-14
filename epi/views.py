@@ -12,6 +12,7 @@ from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import timedelta, date # Importe date, é útil para comparação com timezone.now().date()
 from django.db import transaction # Importar transaction para atomicidade
+from django.core.paginator import Paginator
 
 # --- Importações de Views Genéricas e URLs ---
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
@@ -79,8 +80,13 @@ def listar_epis(request):
 
     epis = epis.order_by('nome')
 
+    # Paginação
+    paginator = Paginator(epis, 10)  # Ajuste o número de itens por página aqui (ex: 10)
+    page_number = request.GET.get('page')
+    epis_page = paginator.get_page(page_number)
+
     context = {
-        'epis': epis,
+        'epis': epis_page,
         'filter_form': filter_form,
         'active_page': 'epis',
     }

@@ -36,13 +36,13 @@
     </div>
 
     {# Links de Ação #}
-     <p class="mb-4">
+    <p class="mb-4">
         <a href="{% url 'adicionar_epi' %}" class="btn btn-success me-2">Adicionar Novo EPI</a>
-        <a href="{% url 'listar_tipos_epi' %}" class="btn btn-info me-2">Gerenciar Tipos de EPI</a> {# <-- ALTERADO AQUI #}
-        <a href="{% url 'listar_colaboradores' %}" class="btn btn-secondary me-2">Gerenciar Colaboradores</a> {# <-- ALTERADO AQUI #}
-        <a href="{% url 'adicionar_saida_epi' %}" class="btn btn-primary">Registrar Saída de EPI</a> {# <-- ALTERADO AQUI #}
-        <a href="{% url 'listar_entradas_epi' %}" class="btn btn-dark ms-2">Ver Entradas de EPI</a> {# <-- ADICIONADO AQUI #}
-        <a href="{% url 'listar_saidas_epi' %}" class="btn btn-warning ms-2">Ver Saídas de EPI</a> {# <-- ADICIONADO AQUI #}
+        <a href="{% url 'listar_tipos_epi' %}" class="btn btn-info me-2">Gerenciar Tipos de EPI</a>
+        <a href="{% url 'listar_colaboradores' %}" class="btn btn-secondary me-2">Gerenciar Colaboradores</a>
+        <a href="{% url 'adicionar_saida_epi' %}" class="btn btn-primary">Registrar Saída de EPI</a>
+        <a href="{% url 'listar_entradas_epi' %}" class="btn btn-dark ms-2">Ver Entradas de EPI</a>
+        <a href="{% url 'listar_saidas_epi' %}" class="btn btn-warning ms-2">Ver Saídas de EPI</a>
     </p>
 
     {# Tabela de EPIs #}
@@ -106,6 +106,43 @@
                 </tbody>
             </table>
         </div>
+
+        {# Paginação #}
+        {% if epis.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if epis.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ epis.previous_page_number }}{{ request.GET.urlencode|cut:'page='|add:'&' }}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+
+                {% for num in epis.paginator.page_range %}
+                    {% if epis.number == num %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{{ request.GET.urlencode|cut:'page='|add:'&' }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if epis.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ epis.next_page_number }}{{ request.GET.urlencode|cut:'page='|add:'&' }}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     {% else %}
         <div class="alert alert-info" role="alert">
             Nenhum EPI encontrado com os critérios de filtro.
