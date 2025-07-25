@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar Treinamento{% else %}Adicionar Treinamento{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">{% if form.instance.pk %}Editar Treinamento{% else %}Adicionar Novo Treinamento{% endif %}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% comment %}
+                Se você estiver usando django-crispy-forms, pode renderizar o formulário assim:
+                {% load crispy_forms_tags %}
+                {{ form|crispy }}
+                Caso contrário, você pode renderizar campo a campo para maior controle, ou usar {{ form.as_p }} ou {{ form.as_table }}
+                {% endcomment %}
+
+                {# Exemplo de renderização manual para aplicar classes Bootstrap #}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                
+                {% if form.non_field_errors %}\
+                    <div class="alert alert-danger mt-3">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <hr>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>Salvar
+                    </button>
+                    <a href="{% url 'rh:treinamento_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

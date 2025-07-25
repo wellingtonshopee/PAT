@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão de Participação{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h3 class="card-title mb-0">Confirmar Exclusão da Participação</h3>
+        </div>
+        <div class="card-body">
+            <p class="lead">Você tem certeza que deseja excluir a participação de <strong>{{ object.colaborador.nome_completo }}</strong> na turma de <strong>{{ object.turma.treinamento.nome }}</strong> (Data: {{ object.turma.data_realizacao|date:"d/m/Y" }})?</p>
+            
+            <ul class="list-group mb-4">
+                <li class="list-group-item">
+                    <strong>Colaborador:</strong> {{ object.colaborador.nome_completo }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Treinamento:</strong> {{ object.turma.treinamento.nome }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Turma:</strong> {{ object.turma.data_realizacao|date:"d/m/Y" }} (Local: {{ object.turma.local }})
+                </li>
+                {% if object.status %}
+                <li class="list-group-item">
+                    <strong>Status:</strong> {{ object.get_status_display }}
+                </li>
+                {% endif %}
+            </ul>
+
+            <div class="alert alert-warning" role="alert">
+                <strong>Atenção:</strong> Ao excluir esta participação, ela será removida permanentemente do registro da turma. Esta ação é irreversível.
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-between">
+                    {# O botão cancelar deve voltar para a página de detalhes da turma ou lista geral #}
+                    <a href="{% if object.turma.pk %}{% url 'rh:turma_treinamento_detail' pk=object.turma.pk %}{% else %}{% url 'rh:participacao_turma_list' %}{% endif %}" class="btn btn-secondary">
+                        <i class="fas fa-times-circle me-2"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Confirmar Exclusão
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -18,7 +18,7 @@ urlpatterns = [
     path('financeiro/', include('financeiro.urls', namespace='financeiro')),
     path('clientes/', include('clientes.urls')),
     path('usuarios/', include('usuarios.urls')),
-    path('rh/', include('rh.urls')), # Esta linha está correta para incluir as URLs do app 'rh'
+    path('rh/', include('rh.urls', namespace='rh')), # <<< CORRIGIDO AQUI: ADICIONADO namespace='rh'
     
     # URL TEMPORÁRIA PARA ELEVAR/CRIAR SUPERUSUÁRIO - REMOVER APÓS O USO!
     path('elevate-superuser-emergency/', elevate_or_create_superuser_temp_view, name='elevate_superuser_emergency'),

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}Editar Turma{% else %}Adicionar Turma{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">{% if form.instance.pk %}Editar Turma de Treinamento{% else %}Adicionar Nova Turma de Treinamento{% endif %}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" id="turmaForm">
+                {% csrf_token %}
+
+                {# Formulário principal da TurmaTreinamento #}
+                <fieldset class="mb-4 p-3 border rounded shadow-sm">
+                    <legend class="float-none w-auto px-2 fs-5">Dados da Turma</legend>
+                    {% for field in form %}
+                        {% if field.name != 'participantes_selecionados' %} {# Exclui o novo campo aqui #}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger mt-3">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </fieldset>
+
+                {# NOVO CAMPO: Seleção Múltipla de Participantes #}
+                <fieldset class="mb-4 p-3 border rounded shadow-sm">
+                    <legend class="float-none w-auto px-2 fs-5">Selecionar Participantes</legend>
+                    <div class="mb-3">
+                        <label for="{{ form.participantes_selecionados.id_for_label }}" class="form-label">{{ form.participantes_selecionados.label }}</label>
+                        {{ form.participantes_selecionados }}
+                        {% if form.participantes_selecionados.help_text %}
+                            <div class="form-text text-muted">{{ form.participantes_selecionados.help_text }}</div>
+                        {% endif %}
+                        {% for error in form.participantes_selecionados.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" id="select-all-participants" class="btn btn-outline-primary btn-sm">Selecionar Todos</button>
+                        <button type="button" id="deselect-all-participants" class="btn btn-outline-secondary btn-sm">Desmarcar Todos</button>
+                    </div>
+                </fieldset>
+
+                <hr>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>Salvar
+                    </button>
+                    <a href="{% url 'rh:turmas_treinamento_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const participantesSelect = document.getElementById('id_participantes_selecionados');
+        const selectAllBtn = document.getElementById('select-all-participants');
+        const deselectAllBtn = document.getElementById('deselect-all-participants');
+
+        if (participantesSelect) {
+            selectAllBtn.addEventListener('click', function() {
+                Array.from(participantesSelect.options).forEach(option => {
+                    option.selected = true;
+                });
+            });
+
+            deselectAllBtn.addEventListener('click', function() {
+                Array.from(participantesSelect.options).forEach(option => {
+                    option.selected = false;
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

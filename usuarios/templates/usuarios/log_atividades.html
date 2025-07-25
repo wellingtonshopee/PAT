@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load crispy_forms_tags %} {# Permite usar o filtro |crispy e |as_crispy_field #}
+{% load crispy_forms_tags %}
 
 {% block title %}Log de Atividades - Sistema de Controle Interno do HUB{% endblock %}
 
@@ -17,8 +17,6 @@
             <form method="GET" class="row g-3">
                 {% for field in filter.form %}
                     <div class="col-md-4 col-sm-6 col-12">
-                        {# APENAS UMA LINHA É NECESSÁRIA AQUI PARA O CRISPY FORMS #}
-                        {# Ele já inclui o label e o help_text automaticamente #}
                         {{ field|as_crispy_field }} 
                     </div>
                 {% endfor %}
@@ -29,32 +27,60 @@
             </form>
         </div>
     </div>
+
     {% if logs %}
     <div class="table-responsive">
         <table class="table table-striped table-hover table-bordered">
             <thead class="table-dark">
                 <tr>
-                    <th>Data/Hora</th>
+                    <th class="text-nowrap">Data/Hora</th>
                     <th>Usuário</th>
                     <th>Ação</th>
                     <th>Descrição</th>
-                    <th>IP</th>
+                    <th class="text-nowrap">IP</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
                 <tr>
-                    <td>{{ log.data_hora|date:"d/m/Y H:i:s" }}</td>
+                    <td class="text-nowrap">{{ log.data_hora|date:"d/m/Y H:i:s" }}</td>
                     <td>{{ log.usuario.username|default:"Anônimo" }}</td>
                     <td>{{ log.acao }}</td>
                     <td>{{ log.descricao|default:"-" }}</td>
-                    <td>{{ log.ip_endereco|default:"-" }}</td>
+                    <td class="text-nowrap">{{ log.ip_endereco|default:"-" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {# Você pode adicionar paginação aqui se tiver muitos logs #}
+
+    <!-- Paginação -->
+    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+        <div class="mb-2">
+            Exibindo {{ logs.start_index }} - {{ logs.end_index }} de {{ logs.paginator.count }} registros
+        </div>
+        <nav aria-label="Navegação de página">
+            <ul class="pagination pagination-sm mb-0">
+                {% if logs.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|safe }}&{% endif %}page={{ logs.previous_page_number }}">Anterior</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+
+                <li class="page-item active"><span class="page-link">{{ logs.number }}</span></li>
+
+                {% if logs.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode|safe }}&{% endif %}page={{ logs.next_page_number }}">Próxima</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
     {% else %}
     <div class="alert alert-info" role="alert">
         Nenhuma atividade registrada ainda com os filtros aplicados.

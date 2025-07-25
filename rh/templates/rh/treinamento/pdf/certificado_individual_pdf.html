@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Certificado de Conclusão</title>
+    <style>
+        @page {
+            size: A4 landscape; /* Certificado geralmente é em paisagem */
+            margin: 15mm;
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            color: #333;
+            text-align: center;
+            padding: 30px;
+            border: 2px solid #0056b3; /* Borda azul para o certificado */
+            box-sizing: border-box; /* Inclui o padding e a borda na dimensão total */
+            height: 100%; /* Ocupa a altura total da página */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 32pt;
+            color: #0056b3; /* Azul escuro */
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .header h2 {
+            font-size: 18pt;
+            color: #555;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .content {
+            margin: 30px 0;
+            line-height: 1.6;
+        }
+        .content p {
+            font-size: 14pt;
+            margin-bottom: 10px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #007bff; /* Azul claro */
+            font-size: 16pt;
+        }
+        .signature-block {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            width: 40%;
+            text-align: center;
+        }
+        .date {
+            margin-top: 40px;
+            font-size: 12pt;
+        }
+        .logo {
+            margin-bottom: 20px;
+            /* Se tiver um logo, você pode adicionar uma imagem aqui */
+            /* ex: background-image: url("caminho/para/seu/logo.png"); background-size: contain; background-repeat: no-repeat; height: 100px; width: 200px; */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            {# Você pode inserir um logo aqui. Para PDFs, é melhor usar URLs absolutas para imagens ou base64 #}
+            {# Exemplo (com caminho absoluto ou base64 se seu ambiente permitir): #}
+            {# <img src="/static/img/seu_logo.png" alt="Logo da Empresa" style="width: 150px;"> #}
+        </div>
+        <h1>Certificado de Conclusão</h1>
+        <h2>Concedido a</h2>
+    </div>
+
+    <div class="content">
+        <p>Certificamos que</p>
+        <p class="highlight">{{ colaborador.nome_completo|upper }}</p>
+        <p>com CPF: <span class="highlight">{{ colaborador.cpf }}</span> e Matrícula: <span class="highlight">{{ colaborador.matricula }}</span>,</p>
+        <p>concluiu com êxito o treinamento:</p>
+        <p class="highlight">"{{ treinamento.nome|upper }}"</p>
+        <p>com carga horária de <span class="highlight">{{ carga_horaria }} horas</span>,</p>
+        <p>realizado em <span class="highlight">{{ turma.data_realizacao|date:"d de F de Y" }}</span>.</p>
+        <p>Instrutor(a): <span class="highlight">{{ turma.instrutor }}</span></p>
+        
+        {% if participacao.nota_avaliacao %}
+            <p>Obtendo a nota final de <span class="highlight">{{ participacao.nota_avaliacao }}</span>.</p>
+        {% endif %}
+    </div>
+
+    <div class="date">
+        Emitido em: {{ data_emissao|date:"d de F de Y" }}
+    </div>
+
+    <div class="signature-block">
+        <div class="signature-line">
+            <p>_____________________________________</p>
+            <p>Assinatura do Instrutor</p>
+            <p>{{ turma.instrutor }}</p>
+        </div>
+        <div class="signature-line">
+            <p>_____________________________________</p>
+            <p>Assinatura do Responsável RH</p>
+            {# Pode adicionar um campo no model para o nome do responsável se quiser #}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,5 +1,4 @@
 {% load static %}
-<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -181,11 +180,33 @@
             <li class="nav-item">
                 <a class="nav-link {% if active_page == 'home' %}active{% endif %}" href="{% url 'usuarios:home' %}"><i class="fas fa-home me-2"></i>Dashboard</a>
             </li>
-            {# NOVO: Link para o Módulo de RH #}
+            {# Link para o Módulo de RH (agora com submenu) #}
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'rh_home' or active_page == 'lista_tipos_contrato' or active_page == 'adicionar_tipo_contrato' or active_page == 'editar_tipo_contrato' or active_page == 'excluir_tipo_contrato' or active_page == 'absenteismo_home' or active_page == 'lista_registros_absenteismo' or active_page == 'adicionar_registro_absenteismo' or active_page == 'editar_registro_absenteismo' or active_page == 'excluir_registro_absenteismo' or active_page == 'lista_tipos_absenteismo' or active_page == 'adicionar_tipo_absenteismo' or active_page == 'editar_tipo_absenteismo' or active_page == 'excluir_tipo_absenteismo' or active_page == 'lista_lideres' or active_page == 'adicionar_lider' or active_page == 'editar_lider' or active_page == 'excluir_lider' or active_page == 'lista_cargos' or active_page == 'adicionar_cargo' or active_page == 'editar_cargo' or active_page == 'excluir_cargo' %}active{% endif %}" href="{% url 'rh_home' %}">
-                    <i class="fas fa-users-cog me-2"></i> Recursos Humanos
+                <a class="nav-link {% if active_page == 'rh_home' or active_page == 'rh:absenteismo_home' or active_page == 'rh:treinamento_home' %}active{% endif %}"
+                   data-bs-toggle="collapse" href="#rhSubmenu" role="button" 
+                   aria-expanded="{% if active_page == 'rh_home' or active_page == 'rh:absenteismo_home' or active_page == 'rh:treinamento_home' %}true{% else %}false{% endif %}"
+                   aria-controls="rhSubmenu">
+                    <i class="fas fa-users-cog me-2"></i> Recursos Humanos <i class="fas fa-chevron-down float-end"></i>
                 </a>
+                <div class="collapse {% if active_page == 'rh_home' or active_page == 'rh:absenteismo_home' or active_page == 'rh:treinamento_home' %}show{% endif %}" id="rhSubmenu">
+                    <ul class="nav flex-column ps-3">
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'rh_home' %}active{% endif %}" href="{% url 'rh:rh_home' %}">
+                                Início RH
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'rh:absenteismo_home' %}active{% endif %}" href="{% url 'rh:absenteismo_home' %}">
+                                Gestão de Absenteísmo
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'rh:treinamento_home' %}active{% endif %}" href="{% url 'rh:treinamento_home' %}">
+                                Gestão de Treinamentos
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             <li class="nav-item"> {# NOVO: Link para Clientes #}
                 <a class="nav-link {% if active_page == 'clientes' %}active{% endif %}" href="{% url 'listar_clientes' %}">
@@ -243,13 +264,13 @@
             
             {# NOVO: Item de menu com sub-links para Financeiro #}
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'financeiro_contas_pagar' or active_page == 'financeiro_contas_receber' or active_page == 'financeiro_relatorio' %}active{% endif %}"
+                <a class="nav-link {% if active_page == 'financeiro_contas_pagar' %}active{% endif %}"
                    data-bs-toggle="collapse" href="#financeiroSubmenu" role="button" 
-                   aria-expanded="{% if active_page == 'financeiro_contas_pagar' or active_page == 'financeiro_contas_receber' or active_page == 'financeiro_relatorio' %}true{% else %}false{% endif %}"
+                   aria-expanded="{% if active_page == 'financeiro_contas_pagar' %}true{% else %}false{% endif %}"
                    aria-controls="financeiroSubmenu">
                     <i class="fas fa-dollar-sign me-2"></i> Controle Financeiro <i class="fas fa-chevron-down float-end"></i>
                 </a>
-                <div class="collapse {% if active_page == 'financeiro_contas_pagar' or active_page == 'financeiro_contas_receber' or active_page == 'financeiro_relatorio' %}show{% endif %}" id="financeiroSubmenu">
+                <div class="collapse {% if active_page == 'financeiro_contas_pagar' %}show{% endif %}" id="financeiroSubmenu">
                     <ul class="nav flex-column ps-3">
                         <li class="nav-item">
                             <a class="nav-link {% if active_page == 'financeiro_contas_pagar' %}active{% endif %}" href="{% url 'financeiro:listar_contas_pagar' %}">

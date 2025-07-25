@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{# REMOVIDO: {% load widget_tweaks %} #}
+
+{% block title %}{% if form.instance.pk %}Editar Participação{% else %}Adicionar Participação{% endif %}{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">{% if form.instance.pk %}Editar Participação em Turma{% else %}Adicionar Nova Participação em Turma{% endif %}</h1>
+
+    <div class="card mb-4 p-4 shadow-sm">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="{{ form.turma.id_for_label }}" class="form-label">{{ form.turma.label }}</label>
+                {# Renderização manual do campo 'turma' #}
+                <select name="{{ form.turma.html_name }}" id="{{ form.turma.id_for_label }}" class="form-select">
+                    {% for value, label in form.turma.field.choices %}
+                        <option value="{{ value }}" {% if form.turma.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.turma.errors %}
+                    <div class="invalid-feedback d-block">{{ form.turma.errors }}</div>
+                {% endif %}
+                {# Elemento para exibir a turma selecionada #}
+                <div id="turma-selecionada-display" class="mt-2 p-2 bg-light rounded" style="display: none;">
+                    <strong>Turma Selecionada:</strong> <span id="turma-nome"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.colaborador.id_for_label }}" class="form-label">{{ form.colaborador.label }}</label>
+                {# Renderização manual do campo 'colaborador' #}
+                <select name="{{ form.colaborador.html_name }}" id="{{ form.colaborador.id_for_label }}" class="form-select">
+                    {% for value, label in form.colaborador.field.choices %}
+                        <option value="{{ value }}" {% if form.colaborador.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.colaborador.errors %}
+                    <div class="invalid-feedback d-block">{{ form.colaborador.errors }}</div>
+                {% endif %}
+            </div>
+
+            {# Outros campos do ParticipacaoTurmaForm - AGORA TODOS RENDERIZADOS MANUALMENTE #}
+            <div class="mb-3">
+                <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                {# Renderização manual do campo 'status' #}
+                <select name="{{ form.status.html_name }}" id="{{ form.status.id_for_label }}" class="form-select">
+                    {% for value, label in form.status.field.choices %}
+                        <option value="{{ value }}" {% if form.status.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.status.errors %}
+                    <div class="invalid-feedback d-block">{{ form.status.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.data_participacao.id_for_label }}" class="form-label">{{ form.data_participacao.label }}</label>
+                {# Renderização manual do campo 'data_participacao' #}
+                <input type="date" name="{{ form.data_participacao.html_name }}" id="{{ form.data_participacao.id_for_label }}" class="form-control" value="{{ form.data_participacao.value|date:'Y-m-d'|default_if_none:'' }}">
+                {% if form.data_participacao.errors %}
+                    <div class="invalid-feedback d-block">{{ form.data_participacao.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.nota_avaliacao.id_for_label }}" class="form-label">{{ form.nota_avaliacao.label }}</label>
+                {# Renderização manual do campo 'nota_avaliacao' #}
+                <input type="number" name="{{ form.nota_avaliacao.html_name }}" id="{{ form.nota_avaliacao.id_for_label }}" class="form-control" value="{{ form.nota_avaliacao.value|default_if_none:'' }}">
+                {% if form.nota_avaliacao.errors %}
+                    <div class="invalid-feedback d-block">{{ form.nota_avaliacao.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 form-check form-switch">
+                {# Renderização manual do campo 'certificado_emitido' #}
+                <input type="checkbox" name="{{ form.certificado_emitido.html_name }}" id="{{ form.certificado_emitido.id_for_label }}" class="form-check-input" {% if form.certificado_emitido.value %}checked{% endif %}>
+                <label class="form-check-label" for="{{ form.certificado_emitido.id_for_label }}">{{ form.certificado_emitido.label }}</label>
+                {% if form.certificado_emitido.errors %}
+                    <div class="invalid-feedback d-block">{{ form.certificado_emitido.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.data_emissao_certificado.id_for_label }}" class="form-label">{{ form.data_emissao_certificado.label }}</label>
+                {# Renderização manual do campo 'data_emissao_certificado' #}
+                <input type="date" name="{{ form.data_emissao_certificado.html_name }}" id="{{ form.data_emissao_certificado.id_for_label }}" class="form-control" value="{{ form.data_emissao_certificado.value|date:'Y-m-d'|default_if_none:'' }}">
+                {% if form.data_emissao_certificado.errors %}
+                    <div class="invalid-feedback d-block">{{ form.data_emissao_certificado.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+                {# Renderização manual do campo 'observacoes' #}
+                <textarea name="{{ form.observacoes.html_name }}" id="{{ form.observacoes.id_for_label }}" class="form-control" rows="3">{{ form.observacoes.value|default_if_none:'' }}</textarea>
+                {% if form.observacoes.errors %}
+                    <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                {% endif %}
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-end">
+                {# Ajustado o href para voltar para a lista de participações, ou para a turma se vier de lá #}
+                <a href="{% if turma_pk %}{% url 'rh:turma_treinamento_detail' pk=turma_pk %}{% else %}{% url 'rh:participacao_turma_list' %}{% endif %}" class="btn btn-secondary me-2">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const turmaSelect = document.getElementById('id_turma_select');
+        const turmaDisplayContainer = document.getElementById('turma-selecionada-display');
+        const turmaNomeSpan = document.getElementById('turma-nome');
+
+        function updateTurmaDisplay() {
+            if (turmaSelect.value) {
+                const selectedOptionText = turmaSelect.options[turmaSelect.selectedIndex].text;
+                turmaNomeSpan.textContent = selectedOptionText;
+                turmaDisplayContainer.style.display = 'block'; // Mostra o display
+            } else {
+                turmaNomeSpan.textContent = '';
+                turmaDisplayContainer.style.display = 'none'; // Esconde se nada estiver selecionado
+            }
+        }
+
+        // Atualiza a exibição quando a página carrega (se já houver uma turma selecionada)
+        updateTurmaDisplay();
+
+        // Adiciona um listener para mudanças no select da turma
+        turmaSelect.addEventListener('change', updateTurmaDisplay);
+    });
+</script>
+{% endblock %}

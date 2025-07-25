@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão de Turma{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h3 class="card-title mb-0">Confirmar Exclusão</h3>
+        </div>
+        <div class="card-body">
+            <p class="lead">Você tem certeza que deseja excluir a turma de treinamento?</p>
+            
+            <ul class="list-group mb-4">
+                <li class="list-group-item">
+                    <strong>Treinamento:</strong> {{ object.treinamento.nome }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Data:</strong> {{ object.data_realizacao|date:"d/m/Y" }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Local:</strong> {{ object.local }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Instrutor:</strong> {{ object.instrutor }}
+                </li>
+            </ul>
+
+            <div class="alert alert-warning" role="alert">
+                <strong>Atenção:</strong> Ao excluir esta turma, todas as participações de colaboradores associadas a ela também serão removidas. Esta ação é irreversível.
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'rh:turmas_treinamento_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times-circle me-2"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Confirmar Exclusão
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

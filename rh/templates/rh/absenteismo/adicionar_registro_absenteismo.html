@@ -87,7 +87,7 @@
             <hr class="my-4">
 
             <div class="d-flex justify-content-end">
-                <a href="{% url 'lista_registros_absenteismo' %}" class="btn btn-secondary me-2">Cancelar</a>
+                <a href="{% url 'rh:lista_registros_absenteismo' %}" class="btn btn-secondary me-2">Cancelar</a>
                 <button type="submit" class="btn btn-primary">Salvar Registro</button>
             </div>
         </form>
@@ -97,20 +97,22 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const colaboradorSelect = document.getElementById('id_colaborador_select');
+            // DEBUG: Log para verificar se o elemento é encontrado
+            console.log('colaboradorSelect element:', colaboradorSelect);
+
             const tipoContratoDisplay = document.getElementById('id_tipo_contrato_display');
             const liderDisplay = document.getElementById('id_lider_display');
             const cargoDisplay = document.getElementById('id_cargo_display');
 
             // Função para limpar os campos
             function clearColaboradorData() {
-                tipoContratoDisplay.value = '';
-                liderDisplay.value = '';
-                cargoDisplay.value = '';
+                if (tipoContratoDisplay) tipoContratoDisplay.value = '';
+                if (liderDisplay) liderDisplay.value = '';
+                if (cargoDisplay) cargoDisplay.value = '';
             }
 
             // Função para buscar e preencher os dados
             async function fetchColaboradorData(colaboradorId) {
-                // Adicionado log para depuração
                 console.log('DEBUG JS: ID do Colaborador selecionado para API:', colaboradorId); 
 
                 if (!colaboradorId) {
@@ -119,16 +121,13 @@
                 }
 
                 try {
-                    // *** AQUI ESTÁ O AJUSTE! De '/epi/api/' para '/epis/api/' ***
                     const response = await fetch(`/epis/api/colaborador/${colaboradorId}/`);
-                    // Adicionado log para depuração
                     console.log('DEBUG JS: Status da Resposta da API:', response.status);
                     
                     if (!response.ok) {
                         if (response.status === 404) {
                             console.warn('DEBUG JS: Colaborador não encontrado na API (404).');
                         } else {
-                            // Tenta ler o corpo da resposta para mais detalhes sobre o erro
                             const errorText = await response.text(); 
                             console.error(`DEBUG JS: Erro ao buscar dados do colaborador: ${response.status} ${response.statusText}. Resposta: ${errorText}`);
                         }
@@ -137,13 +136,12 @@
                     }
 
                     const data = await response.json();
-                    // Adicionado log para depuração
                     console.log('DEBUG JS: Dados recebidos da API:', data);
                     
                     // Preenche os campos com os dados recebidos ou 'N/A' se forem nulos
-                    tipoContratoDisplay.value = data.tipo_contrato || 'N/A';
-                    liderDisplay.value = data.lider || 'N/A';
-                    cargoDisplay.value = data.cargo || 'N/A';
+                    if (tipoContratoDisplay) tipoContratoDisplay.value = data.tipo_contrato || 'N/A';
+                    if (liderDisplay) liderDisplay.value = data.lider || 'N/A';
+                    if (cargoDisplay) cargoDisplay.value = data.cargo || 'N/A';
 
                 } catch (error) {
                     console.error('DEBUG JS: Erro na requisição Fetch (problema de rede ou JSON inválido):', error);
@@ -151,16 +149,20 @@
                 }
             }
 
-            // Adiciona o evento de 'change' ao select do colaborador
-            colaboradorSelect.addEventListener('change', function() {
-                const selectedColaboradorId = this.value;
-                fetchColaboradorData(selectedColaboradorId);
-            });
+            // Adiciona o evento de 'change' ao select do colaborador SOMENTE SE O ELEMENTO EXISTIR
+            if (colaboradorSelect) {
+                colaboradorSelect.addEventListener('change', function() {
+                    const selectedColaboradorId = this.value;
+                    fetchColaboradorData(selectedColaboradorId);
+                });
 
-            // Se a página for carregada com um colaborador já selecionado (e.g., em um formulário de edição
-            // ou após um erro de validação do formulário, onde o valor do select é mantido)
-            if (colaboradorSelect.value) {
-                fetchColaboradorData(colaboradorSelect.value);
+                // Se a página for carregada com um colaborador já selecionado (e.g., em um formulário de edição
+                // ou após um erro de validação do formulário, onde o valor do select é mantido)
+                if (colaboradorSelect.value) {
+                    fetchColaboradorData(colaboradorSelect.value);
+                }
+            } else {
+                console.error("Erro: Elemento com ID 'id_colaborador_select' não encontrado. O script de preenchimento automático não funcionará.");
             }
         });
     </script>

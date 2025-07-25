@@ -8,11 +8,11 @@
 
     {# Links de Ação #}
     <p class="mb-4">
-        <a href="{% url 'adicionar_registro_absenteismo' %}" class="btn btn-success me-2">Adicionar Novo Registro</a>
-        <a href="{% url 'absenteismo_home' %}" class="btn btn-secondary">Voltar ao Início do Absenteísmo</a>
+        <a href="{% url 'rh:adicionar_registro_absenteismo' %}" class="btn btn-success me-2">Adicionar Novo Registro</a>
+        <a href="{% url 'rh:absenteismo_home' %}" class="btn btn-secondary">Voltar ao Início do Absenteísmo</a>
         {# NOVO BOTÃO/LINK PARA EXPORTAR CSV - CORRIGIDO O NOME DA URL E OS PARÂMETROS #}
         {# Agora ele passará todos os filtros atualmente ativos na página. #}
-        <a href="{% url 'exportar_absenteismo_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-info ms-2">
+        <a href="{% url 'rh:exportar_absenteismo_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-info ms-2">
             <i class="bi bi-file-earmark-arrow-down"></i> Exportar CSV
         </a>
     </p>
@@ -48,7 +48,7 @@
 
         <div class="col-12 d-flex justify-content-end">
             <button type="submit" class="btn btn-primary me-2">Filtrar</button>
-            <a href="{% url 'lista_registros_absenteismo' %}" class="btn btn-secondary">Limpar</a>
+            <a href="{% url 'rh:lista_registros_absenteismo' %}" class="btn btn-secondary">Limpar</a>
         </div>
     </form>
 
@@ -76,8 +76,8 @@
                             <td>{{ registro.data_fim|date:"d/m/Y"|default_if_none:"N/A" }}</td>
                             <td>{{ registro.total_dias|default_if_none:"0" }}</td>
                             <td>
-                                <a href="{% url 'editar_registro_absenteismo' registro.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
-                                <form action="{% url 'excluir_registro_absenteismo' registro.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este registro de absenteísmo?');">
+                                <a href="{% url 'rh:editar_registro_absenteismo' registro.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'rh:excluir_registro_absenteismo' registro.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este registro de absenteísmo?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                                 </form>

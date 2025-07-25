@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SIGAH - Lista de Presença - {{ turma.treinamento.nome }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt; /* Tamanho base para todo o corpo, agora 9pt */
+            margin: 20mm;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            /* Herda font-size de body */
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            /* Herda font-size de body */
+        }
+        h3 {
+            text-align: center;
+            color: #333;
+            /* Herda font-size de body */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 9pt; /* Garante que os itens numerados e cabeçalhos sejam 9pt */
+            font-weight: normal;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold; /* Manter bold para o cabeçalho da coluna */
+            text-align: center; /* Centraliza o texto nos cabeçalhos como na imagem */
+        }
+        .info-block {
+            margin-bottom: 15px;
+            /* Herda font-size de body */
+        }
+        .info-block p {
+            margin: 4px 0;
+        }
+        .info-block strong {
+            display: inline-block;
+            width: 120px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            /* Herda font-size de body */
+            color: #777;
+        }
+        /* Estilos específicos para o conteúdo do participante */
+        .participant-name {
+            font-weight: bold; /* Nome em negrito como na imagem */
+            font-size: 9pt; /* Nome principal em 9pt */
+        }
+        .participant-id {
+            font-size: 7pt; /* CPF/Matrícula menor (ajustado para ser relativo a 9pt) */
+            color: #555; /* Um pouco mais claro, se desejar */
+        }
+        .signature-line {
+            border-bottom: 1px solid #000; /* Linha para assinatura */
+            height: 25px; /* Altura para a linha dentro da célula */
+            display: block; /* Para a linha ocupar a largura */
+            margin-top: 20px; /* Espaço entre o topo da célula e a linha */
+        }
+        /* Para o alinhamento do número do item */
+        .item-number {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lista de Presença</h1>
+    <h2>Treinamento: {{ turma.treinamento.nome }}</h2>
+    <h3>Turma: {{ turma.data_realizacao|date:"d/m/Y" }}</h3>
+
+    <div class="info-block">
+        <p><strong>Local:</strong> {{ turma.local }}</p>
+        <p><strong>Período:</strong> {{ turma.horario_inicio|time:"H:i" }} às {{ turma.horario_fim|time:"H:i" }}</p>
+        <p><strong>Instrutor:</strong> {{ turma.instrutor }}</p>
+        <p><strong>Carga Horária:</strong> {{ turma.treinamento.carga_horaria }} horas</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;">ITEM</th>
+                <th style="width: 60%;">PARTICIPANTE</th>
+                <th style="width: 35%;">ASSINATURA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for participacao in participacoes %}
+            <tr>
+                <td class="item-number">{{ forloop.counter }}</td>
+                <td>
+                    <span class="participant-name">{{ participacao.colaborador.nome_completo }}</span><br>
+                    <span class="participant-id">{{ participacao.colaborador.cpf }} / {{ participacao.colaborador.matricula }}</span>
+                </td>
+                <td style="vertical-align: bottom;">
+                    <span class="signature-line"></span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhum participante nesta turma.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Documento gerado em {{ data_geracao|date:"d/m/Y H:i" }}
+    </div>
+</body>
+</html>

@@ -51,7 +51,7 @@
         </div>
     </div>
 
-    <form method="post" id="absenteeism-form" action="{% url 'marcar_absenteismo_diario' %}?data={{ selected_date|date:'Y-m-d' }}&turno={{ selected_turno }}">
+    <form method="post" id="absenteeism-form" action="{% url 'rh:marcar_absenteismo_diario' %}?data={{ selected_date|date:'Y-m-d' }}&turno={{ selected_turno }}">
         {% csrf_token %}
 
         {# Seção para marcar absenteísmo em massa #}
@@ -190,7 +190,7 @@
 
         <div class="d-flex justify-content-between mt-4">
             <button type="submit" class="btn btn-success btn-lg shadow">Salvar Absenteísmo Diário</button>
-            <a href="{% url 'absenteismo_home' %}" class="btn btn-secondary btn-lg">Voltar</a>
+            <a href="{% url 'rh:absenteismo_home' %}" class="btn btn-secondary btn-lg">Voltar</a>
         </div>
     </form>
 </div>

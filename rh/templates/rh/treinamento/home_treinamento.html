@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Treinamentos - Início{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Gestão de Treinamentos</h2>
+    <p class="lead">Bem-vindo à área de gestão de treinamentos. Aqui você pode gerenciar tipos de treinamentos, turmas e a participação dos colaboradores.</p>
+
+    {# Exibição de mensagens do Django, como sucesso ou erro #}
+    {% if messages %}
+        <div class="messages-container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="row">
+        {# Card para Listar Tipos de Treinamento #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-list-alt me-2"></i> Tipos de Treinamento</h5>
+                    <p class="card-text">Visualize e gerencie os tipos de treinamento cadastrados (e.g., NR10, Primeiros Socorros).</p>
+                    <a href="{% url 'rh:treinamento_list' %}" class="btn btn-info w-100">Ver Tipos</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Adicionar Novo Tipo de Treinamento #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-plus-circle me-2"></i> Adicionar Novo Treinamento</h5>
+                    <p class="card-text">Cadastre um novo tipo de treinamento que pode ser oferecido aos colaboradores.</p>
+                    <a href="{% url 'rh:treinamento_create' %}" class="btn btn-success w-100">Adicionar Treinamento</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Listar Turmas de Treinamento #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100 border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary"><i class="fas fa-users-class me-2"></i> Gerenciar Turmas</h5>
+                    <p class="card-text">Crie, visualize e edite as turmas de treinamentos agendadas ou realizadas.</p>
+                    <a href="{% url 'rh:turmas_treinamento_list' %}" class="btn btn-primary w-100">Ver Turmas</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Adicionar Nova Turma #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-calendar-plus me-2"></i> Criar Nova Turma</h5>
+                    <p class="card-text">Agende uma nova turma para um treinamento específico, definindo data, local e instrutor.</p>
+                    <a href="{% url 'rh:turma_treinamento_create' %}" class="btn btn-outline-primary w-100">Criar Turma</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Listar Participações #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user-check me-2"></i> Participações em Turmas</h5>
+                    <p class="card-text">Visualize e gerencie as participações individuais dos colaboradores em cada turma de treinamento.</p>
+                    <a href="{% url 'rh:participacao_turma_list' %}" class="btn btn-secondary w-100">Ver Participações</a>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Adicionar Participação Avulsa (se necessário) #}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user-plus me-2"></i> Adicionar Participação Avulsa</h5>
+                    <p class="card-text">Registre a participação de um colaborador em uma turma de treinamento específica.</p>
+                    {# CORRIGIDO AQUI: Usando a nova URL sem turma_pk #}
+                    <a href="{% url 'rh:participacao_turma_create_general' %}" class="btn btn-outline-secondary w-100">Adicionar Participante</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-4 text-center">
+        <a href="{% url 'rh:rh_home' %}" class="btn btn-outline-secondary btn-lg"><i class="fas fa-arrow-left me-2"></i> Voltar para Início RH</a>
+    </div>
+</div>
+{% endblock %}

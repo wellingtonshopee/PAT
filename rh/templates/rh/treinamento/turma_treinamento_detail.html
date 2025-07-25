@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes da Turma: {{ turma.treinamento.nome }} ({{ turma.data_realizacao|date:"d/m/Y" }}){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="card-title mb-0">Detalhes da Turma de Treinamento</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Treinamento:</strong> {{ turma.treinamento.nome }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Instrutor:</strong> {{ turma.instrutor }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Data de Realização:</strong> {{ turma.data_realizacao|date:"d/m/Y" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Horário:</strong> {{ turma.horario_inicio|time:"H:i" }} - {{ turma.horario_fim|time:"H:i" }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Local:</strong> {{ turma.local }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Status:</strong> {{ turma.get_status_display }}
+                </div>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'rh:turma_lista_presenca_pdf' turma.pk %}" class="btn btn-secondary" target="_blank">
+                    <i class="fas fa-file-pdf me-2"></i> Gerar Lista de Presença
+                </a>
+            </div>
+
+            <h4 class="mt-5 mb-3">Participantes da Turma</h4>
+            <a href="{% url 'rh:participacao_turma_create' turma.pk %}" class="btn btn-primary mb-3">
+                <i class="fas fa-user-plus me-2"></i> Adicionar Participante
+            </a>
+
+            {% if participacoes %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Colaborador</th>
+                            {# REMOVIDA A COLUNA 'PRESENTE' #}
+                            <th scope="col">Status</th>
+                            <th scope="col">Data Emissão Certificado</th>
+                            <th scope="col" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for participacao in participacoes %}
+                        <tr>
+                            <td>{{ participacao.colaborador.nome_completo }}</td>
+                            {# REMOVIDO O CONTEÚDO DA CÉLULA 'PRESENTE' #}
+                            <td>{{ participacao.get_status_display }}</td>
+                            <td>{{ participacao.data_emissao_certificado|date:"d/m/Y"|default:"N/A" }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'rh:participacao_turma_update' participacao.turma.pk participacao.pk %}" class="btn btn-warning btn-sm" title="Editar Participação">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'rh:participacao_turma_delete' participacao.turma.pk participacao.pk %}" class="btn btn-danger btn-sm" title="Excluir Participação">
+                                    <i class="fas fa-user-minus"></i>
+                                </a>
+                                {% if participacao.presente %}
+                                <a href="{% url 'rh:participacao_certificado_pdf' participacao.pk %}" class="btn btn-info btn-sm" title="Gerar Certificado" target="_blank">
+                                    <i class="fas fa-award"></i> Cert.
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning" role="alert">
+                Nenhum participante adicionado a esta turma ainda.
+            </div>
+            {% endif %}
+
+            <hr>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'rh:turmas_treinamento_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Voltar para a Lista
+                </a>
+                <div>
+                    <a href="{% url 'rh:turma_treinamento_update' turma.pk %}" class="btn btn-warning me-2">
+                        <i class="fas fa-edit me-2"></i> Editar Turma
+                    </a>
+                    <a href="{% url 'rh:turma_treinamento_delete' turma.pk %}" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Excluir Turma
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

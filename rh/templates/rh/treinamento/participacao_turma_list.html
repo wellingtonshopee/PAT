@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Participações em Turmas{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Participações em Turmas</h2>
+
+    <p class="mb-4">
+        {# CORRIGIDO AQUI: Link para a URL de adição geral de participação #}
+        <a href="{% url 'rh:participacao_turma_create_general' %}" class="btn btn-success me-2">
+            <i class="fas fa-plus-circle me-2"></i> Adicionar Nova Participação
+        </a>
+        <a href="{% url 'rh:treinamento_home' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Voltar para Início Treinamentos
+        </a>
+    </p>
+
+    {# Formulário de Filtros #}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtrar Participações</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="." class="row g-3">
+                <div class="col-md-4">
+                    <label for="id_q" class="form-label">Pesquisar (Colaborador, Treinamento, Observações)</label>
+                    <input type="text" name="q" id="id_q" class="form-control" value="{{ request.GET.q|default_if_none:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_status" class="form-label">Status</label>
+                    <select name="status" id="id_status" class="form-select">
+                        <option value="">-- Todos os Status --</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="id_treinamento" class="form-label">Treinamento</label>
+                    <select name="treinamento" id="id_treinamento" class="form-select">
+                        <option value="">-- Todos os Treinamentos --</option>
+                        {% for treinamento in treinamentos_filter %}
+                            <option value="{{ treinamento.pk }}" {% if request.GET.treinamento|stringformat:"s" == treinamento.pk|stringformat:"s" %}selected{% endif %}>{{ treinamento.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-filter me-2"></i>Filtrar</button>
+                    <a href="{% url 'rh:participacao_turma_list' %}" class="btn btn-outline-secondary w-100"><i class="fas fa-sync-alt"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if participacoes %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Turma</th>
+                        <th>Treinamento</th>
+                        <th>Colaborador</th>
+                        <th>Status</th>
+                        <th>Nota</th>
+                        <th>Certificado Emitido?</th>
+                        <th>Data Emissão Certificado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participacao in participacoes %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'rh:turma_treinamento_detail' pk=participacao.turma.pk %}">
+                                    {{ participacao.turma.treinamento.nome }} - {{ participacao.turma.data_realizacao|date:"d/m/Y" }}
+                                </a>
+                            </td>
+                            <td>{{ participacao.turma.treinamento.nome }}</td>
+                            <td>{{ participacao.colaborador.nome_completo }}</td>
+                            <td>{{ participacao.get_status_display }}</td>
+                            <td>{{ participacao.nota_avaliacao|default_if_none:"N/A" }}</td>
+                            <td>{% if participacao.certificado_emitido %}Sim{% else %}Não{% endif %}</td>
+                            <td>{{ participacao.data_emissao_certificado|date:"d/m/Y"|default_if_none:"N/A" }}</td>
+                            <td>
+                                <a href="{% url 'rh:participacao_turma_update' turma_pk=participacao.turma.pk pk=participacao.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'rh:participacao_turma_delete' turma_pk=participacao.turma.pk pk=participacao.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta participação?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                                {% if participacao.status == 'CONCLUIDO' %}
+                                    <a href="{% url 'rh:participacao_certificado_pdf' pk=participacao.pk %}" class="btn btn-sm btn-primary ms-2" target="_blank">
+                                        <i class="fas fa-file-pdf"></i> Certificado
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Paginação #}
+        {% if is_paginated %}
+            <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.treinamento %}&treinamento={{ request.GET.treinamento }}{% endif %}">Anterior</a></li>
+                    {% endif %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}</a></li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.treinamento %}&treinamento={{ request.GET.treinamento }}{% endif %}">Próxima</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhuma participação em turma encontrada para os filtros selecionados.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -7,8 +7,8 @@
     <h1 class="mb-4">Líderes</h1>
 
     <p class="mb-4">
-        <a href="{% url 'adicionar_lider' %}" class="btn btn-success me-2">Adicionar Novo Líder</a>
-        <a href="{% url 'rh_home' %}" class="btn btn-secondary">Voltar ao Início do RH</a>
+        <a href="{% url 'rh:adicionar_lider' %}" class="btn btn-success me-2">Adicionar Novo Líder</a>
+        <a href="{% url 'rh:rh_home' %}" class="btn btn-secondary">Voltar ao Início do RH</a>
     </p>
 
     {% if lideres %}
@@ -25,8 +25,8 @@
                         <tr>
                             <td>{{ lider.nome }}</td>
                             <td>
-                                <a href="{% url 'editar_lider' lider.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
-                                <form action="{% url 'excluir_lider' lider.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este líder?');">
+                                <a href="{% url 'rh:editar_lider' lider.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'rh:excluir_lider' lider.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este líder?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                                 </form>

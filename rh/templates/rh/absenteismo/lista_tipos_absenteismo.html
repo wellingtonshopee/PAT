@@ -7,8 +7,8 @@
     <h1 class="mb-4">Tipos de Absenteísmo</h1>
 
     <p class="mb-4">
-        <a href="{% url 'adicionar_tipo_absenteismo' %}" class="btn btn-success me-2">Adicionar Novo Tipo de Absenteísmo</a>
-        <a href="{% url 'absenteismo_home' %}" class="btn btn-secondary">Voltar ao Início do Absenteísmo</a>
+        <a href="{% url 'rh:adicionar_tipo_absenteismo' %}" class="btn btn-success me-2">Adicionar Novo Tipo de Absenteísmo</a>
+        <a href="{% url 'rh:absenteismo_home' %}" class="btn btn-secondary">Voltar ao Início do Absenteísmo</a>
     </p>
 
     {% if tipos_absenteismo %}
@@ -29,8 +29,8 @@
                             <td>{{ tipo.descricao }}</td>
                             <td>{% if tipo.e_ausencia %}Sim{% else %}Não{% endif %}</td>
                             <td>
-                                <a href="{% url 'editar_tipo_absenteismo' tipo.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
-                                <form action="{% url 'excluir_tipo_absenteismo' tipo.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este tipo de absenteísmo?');">
+                                <a href="{% url 'rh:editar_tipo_absenteismo' tipo.pk %}" class="btn btn-sm btn-info me-2">Editar</a>
+                                <form action="{% url 'rh:excluir_tipo_absenteismo' tipo.pk %}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este tipo de absenteísmo?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                                 </form>

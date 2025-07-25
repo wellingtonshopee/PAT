@@ -1,28 +1,48 @@
 # C:\Users\SEAOps\Documents\pat\rh\views.py
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Count, Q
-from django.forms import modelformset_factory
-from django.utils import timezone
-from datetime import date, timedelta, datetime
-from django.contrib import messages
-import re
-from django.db import transaction
-from django.urls import reverse
-import csv
-from django.http import HttpResponse
-from usuarios.utils import log_atividade
-
-# Importe seus modelos
-from .models import TipoContrato, Lider, Cargo, TipoAbsenteismo, RegistroAbsenteismoDiario
-from epi.models import ColaboradorEPI # Certifique-se que este import está correto
-
-# Importe seus formulários, incluindo o novo RelatorioAbsenteismoFilterForm
-from .forms import (
-    RegistroAbsenteismoForm, TipoContratoForm, TipoAbsenteismoForm,
-    LiderForm, CargoForm, RegistroAbsenteismoDiarioForm,
-    RelatorioAbsenteismoFilterForm # <--- NOVO IMPORT
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Count
+from django.db import models # Importe 'models' como um módulo separado
+from django.urls import reverse_lazy, reverse # <<< ADICIONADO 'reverse' AQUI
+from django.views.generic import (
+    ListView, DetailView, CreateView, UpdateView, DeleteView, View
 )
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db import transaction # Para operações atômicas com formsets
+from django.http import HttpResponse # Para geração de PDF
+
+# >>> Importações adicionadas ou movidas para o topo para garantir disponibilidade
+from django.utils import timezone 
+from django.contrib import messages # Para usar o sistema de mensagens do Django
+from datetime import datetime, timedelta # Para manipulação de datas e tempo
+from django.db.models import Q # Para consultas complexas com OR
+from django.forms import modelformset_factory # Para criar formsets dinamicamente
+import csv # Para exportação de CSV
+import json # <<< ADICIONE ESTA LINHA AQUI
+from django.http import QueryDict
+from django.db.models import Count 
+# <<< FIM DAS IMPORTAÇÕES
+
+# Importar modelos e formulários do app 'rh'
+from .models import (
+    Treinamento, TurmaTreinamento, ParticipacaoTurma,
+    RegistroAbsenteismoDiario, TipoAbsenteismo, TipoContrato, Lider, Cargo
+)
+from epi.models import ColaboradorEPI 
+
+from .forms import (
+    TreinamentoForm, TurmaTreinamentoForm, ParticipacaoTurmaForm,
+    # ParticipacaoTurmaFormSet, # <--- REMOVER ESTA LINHA
+    RegistroAbsenteismoForm,
+    RegistroAbsenteismoDiarioForm, RelatorioAbsenteismoFilterForm,
+    TipoContratoForm, TipoAbsenteismoForm, LiderForm, CargoForm
+)
+
+# Para geração de PDF
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+import io
+from django.utils.text import slugify # Para nomes de arquivos PDF
 
 # --- Views Gerais de RH ---
 
@@ -64,12 +84,12 @@ def adicionar_tipo_contrato(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Tipo de contrato adicionado com sucesso!')
-            return redirect('lista_tipos_contrato')
+            return redirect('rh:lista_tipos_contrato') # Adicionado namespace 'rh:'
     else:
         form = TipoContratoForm()
     context = {
         'form': form,
-        'active_page': 'adicionar_tipo_contrato',
+        'active_page': 'rh:adicionar_tipo_contrato', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/adicionar_tipo_contrato.html', context)
 
@@ -81,13 +101,13 @@ def editar_tipo_contrato(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Tipo de contrato editado com sucesso!')
-            return redirect('lista_tipos_contrato')
+            return redirect('rh:lista_tipos_contrato') # Adicionado namespace 'rh:'
     else:
         form = TipoContratoForm(instance=tipo_contrato)
     context = {
         'form': form,
         'tipo_contrato': tipo_contrato,
-        'active_page': 'editar_tipo_contrato',
+        'active_page': 'rh:editar_tipo_contrato', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/editar_tipo_contrato.html', context)
 
@@ -97,13 +117,13 @@ def excluir_tipo_contrato(request, pk):
     if request.method == 'POST':
         if ColaboradorEPI.objects.filter(tipo_contrato=tipo_contrato).exists():
             messages.error(request, 'Não foi possível excluir o tipo de contrato, pois há colaboradores associados.')
-            return redirect('lista_tipos_contrato')
+            return redirect('rh:lista_tipos_contrato') # Adicionado namespace 'rh:'
         tipo_contrato.delete()
         messages.success(request, 'Tipo de contrato excluído com sucesso!')
-        return redirect('lista_tipos_contrato')
+        return redirect('rh:lista_tipos_contrato') # Adicionado namespace 'rh:'
     context = {
         'tipo_contrato': tipo_contrato,
-        'active_page': 'excluir_tipo_contrato',
+        'active_page': 'rh:excluir_tipo_contrato', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/confirmar_exclusao_tipo_contrato.html', context)
 
@@ -113,7 +133,7 @@ def absenteismo_home(request):
     """Página inicial do módulo de Absenteísmo."""
     context = {
         'titulo': 'Gestão de Absenteísmo',
-        'active_page': 'absenteismo_home',
+        'active_page': 'rh:absenteismo_home', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/absenteismo_home.html', context)
 
@@ -157,7 +177,7 @@ def lista_registros_absenteismo(request):
     context = {
         'registros': registros,
         'tipos_absenteismo': tipos_absenteismo,
-        'active_page': 'lista_registros_absenteismo',
+        'active_page': 'rh:lista_registros_absenteismo', # Adicionado namespace 'rh:'
         'colaborador_nome': colaborador_nome,
         'tipo_absenteismo_id': tipo_absenteismo_id,
         'data_inicio_filtro': data_inicio_filtro_str,
@@ -172,13 +192,13 @@ def adicionar_registro_absenteismo(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Registro de absenteísmo adicionado com sucesso!')
-            return redirect('lista_registros_absenteismo')
+            return redirect('rh:lista_registros_absenteismo') # Adicionado namespace 'rh:'
     else:
         form = RegistroAbsenteismoForm()
 
     context = {
         'form': form,
-        'active_page': 'adicionar_registro_absenteismo',
+        'active_page': 'rh:adicionar_registro_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/adicionar_registro_absenteismo.html', context)
 
@@ -190,14 +210,14 @@ def editar_registro_absenteismo(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Registro de absenteísmo editado com sucesso!')
-            return redirect('lista_registros_absenteismo')
+            return redirect('rh:lista_registros_absenteismo') # Adicionado namespace 'rh:'
     else:
         form = RegistroAbsenteismoForm(instance=registro)
 
     context = {
         'form': form,
         'registro': registro,
-        'active_page': 'editar_registro_absenteismo',
+        'active_page': 'rh:editar_registro_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/editar_registro_absenteismo.html', context)
 
@@ -207,11 +227,11 @@ def excluir_registro_absenteismo(request, pk):
     if request.method == 'POST':
         registro.delete()
         messages.success(request, 'Registro de absenteísmo excluído com sucesso!')
-        return redirect('lista_registros_absenteismo')
+        return redirect('rh:lista_registros_absenteismo') # Adicionado namespace 'rh:'
 
     context = {
         'registro': registro,
-        'active_page': 'excluir_registro_absenteismo',
+        'active_page': 'rh:excluir_registro_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/confirmar_exclusao_absenteismo.html', context)
 
@@ -220,7 +240,7 @@ def lista_tipos_absenteismo(request):
     tipos_absenteismo = TipoAbsenteismo.objects.all().order_by('sigla')
     context = {
         'tipos_absenteismo': tipos_absenteismo,
-        'active_page': 'lista_tipos_absenteismo',
+        'active_page': 'rh:lista_tipos_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/lista_tipos_absenteismo.html', context)
 
@@ -231,12 +251,12 @@ def adicionar_tipo_absenteismo(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Tipo de absenteísmo adicionado com sucesso!')
-            return redirect('lista_tipos_absenteismo')
+            return redirect('rh:lista_tipos_absenteismo') # Adicionado namespace 'rh:'
     else:
         form = TipoAbsenteismoForm()
     context = {
         'form': form,
-        'active_page': 'adicionar_tipo_absenteismo',
+        'active_page': 'rh:adicionar_tipo_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/adicionar_tipo_absenteismo.html', context)
 
@@ -248,13 +268,13 @@ def editar_tipo_absenteismo(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Tipo de absenteísmo editado com sucesso!')
-            return redirect('lista_tipos_absenteismo')
+            return redirect('rh:lista_tipos_absenteismo') # Adicionado namespace 'rh:'
     else:
         form = TipoAbsenteismoForm(instance=tipo_absenteismo)
     context = {
         'form': form,
         'tipo_absenteismo': tipo_absenteismo,
-        'active_page': 'editar_tipo_absenteismo',
+        'active_page': 'rh:editar_tipo_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/editar_tipo_absenteismo.html', context)
 
@@ -264,13 +284,13 @@ def excluir_tipo_absenteismo(request, pk):
     if request.method == 'POST':
         if tipo_absenteismo.registroabsenteismodiario_set.exists():
             messages.error(request, 'Não foi possível excluir o tipo de absenteísmo, pois há registros associados.')
-            return redirect('lista_tipos_absenteismo')
+            return redirect('rh:lista_tipos_absenteismo') # Adicionado namespace 'rh:'
         tipo_absenteismo.delete()
         messages.success(request, 'Tipo de absenteísmo excluído com sucesso!')
-        return redirect('lista_tipos_absenteismo')
+        return redirect('rh:lista_tipos_absenteismo') # Adicionado namespace 'rh:'
     context = {
         'tipo_absenteismo': tipo_absenteismo,
-        'active_page': 'excluir_tipo_absenteismo',
+        'active_page': 'rh:excluir_tipo_absenteismo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/confirmar_exclusao_tipo_absenteismo.html', context)
 
@@ -282,7 +302,7 @@ def lista_lideres(request):
     lideres = Lider.objects.all().order_by('nome')
     context = {
         'lideres': lideres,
-        'active_page': 'lista_lideres',
+        'active_page': 'rh:lista_lideres', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/lista_lideres.html', context)
 
@@ -293,12 +313,12 @@ def adicionar_lider(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Líder adicionado com sucesso!')
-            return redirect('lista_lideres')
+            return redirect('rh:lista_lideres') # Adicionado namespace 'rh:'
     else:
         form = LiderForm()
     context = {
         'form': form,
-        'active_page': 'adicionar_lider',
+        'active_page': 'rh:adicionar_lider', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/adicionar_lider.html', context)
 
@@ -310,13 +330,13 @@ def editar_lider(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Líder editado com sucesso!')
-            return redirect('lista_lideres')
+            return redirect('rh:lista_lideres') # Adicionado namespace 'rh:'
     else:
         form = LiderForm(instance=lider)
     context = {
         'form': form,
         'lider': lider,
-        'active_page': 'editar_lider',
+        'active_page': 'rh:editar_lider', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/editar_lider.html', context)
 
@@ -326,13 +346,13 @@ def excluir_lider(request, pk):
     if request.method == 'POST':
         if ColaboradorEPI.objects.filter(lider=lider).exists():
             messages.error(request, 'Não foi possível excluir o líder, pois há colaboradores associados a ele.')
-            return redirect('lista_lideres')
+            return redirect('rh:lista_lideres') # Adicionado namespace 'rh:'
         lider.delete()
         messages.success(request, 'Líder excluído com sucesso!')
-        return redirect('lista_lideres')
+        return redirect('rh:lista_lideres') # Adicionado namespace 'rh:'
     context = {
         'lider': lider,
-        'active_page': 'excluir_lider',
+        'active_page': 'rh:excluir_lider', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/confirmar_exclusao_lider.html', context)
 
@@ -343,7 +363,7 @@ def lista_cargos(request):
     cargos = Cargo.objects.all().order_by('nome')
     context = {
         'cargos': cargos,
-        'active_page': 'lista_cargos',
+        'active_page': 'rh:lista_cargos', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/lista_cargos.html', context)
 
@@ -354,12 +374,12 @@ def adicionar_cargo(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Cargo adicionado com sucesso!')
-            return redirect('lista_cargos')
+            return redirect('rh:lista_cargos') # Adicionado namespace 'rh:'
     else:
         form = CargoForm()
     context = {
         'form': form,
-        'active_page': 'adicionar_cargo',
+        'active_page': 'rh:adicionar_cargo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/adicionar_cargo.html', context)
 
@@ -371,13 +391,13 @@ def editar_cargo(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Cargo editado com sucesso!')
-            return redirect('lista_cargos')
+            return redirect('rh:lista_cargos') # Adicionado namespace 'rh:'
     else:
         form = CargoForm(instance=cargo)
     context = {
         'form': form,
         'cargo': cargo,
-        'active_page': 'editar_cargo',
+        'active_page': 'rh:editar_cargo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/editar_cargo.html', context)
 
@@ -387,13 +407,13 @@ def excluir_cargo(request, pk):
     if request.method == 'POST':
         if ColaboradorEPI.objects.filter(cargo=cargo).exists():
             messages.error(request, 'Não foi possível excluir o cargo, pois há colaboradores associados a ele.')
-            return redirect('lista_cargos')
+            return redirect('rh:lista_cargos') # Adicionado namespace 'rh:'
         cargo.delete()
         messages.success(request, 'Cargo excluído com sucesso!')
-        return redirect('lista_cargos')
+        return redirect('rh:lista_cargos') # Adicionado namespace 'rh:'
     context = {
         'cargo': cargo,
-        'active_page': 'excluir_cargo',
+        'active_page': 'rh:excluir_cargo', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/confirmar_exclusao_cargo.html', context)
 
@@ -549,7 +569,7 @@ def marcar_absenteismo_diario(request):
 
             messages.success(request, f"Absenteísmo para {selected_date.strftime('%d/%m/%Y')} processado com sucesso!")
             
-            redirect_url = reverse('marcar_absenteismo_diario')
+            redirect_url = reverse('rh:marcar_absenteismo_diario') # Corrigido aqui
             params = []
             if selected_date_str:
                 params.append(f"data={selected_date_str}")
@@ -565,6 +585,7 @@ def marcar_absenteismo_diario(request):
             messages.error(request, "Ocorreu um erro ao salvar o absenteísmo. Por favor, verifique os campos destacados.")
             # O formset já contém os dados POSTados e os erros, então basta passá-lo para o contexto.
             # A lista de colaboradores (`colaboradores_queryset`) ainda será usada para iterar no template.
+            pass
 
     else: # GET request
         # No GET, criamos um formset que conterá um formulário para CADA colaborador ativo,
@@ -599,13 +620,13 @@ def marcar_absenteismo_diario(request):
 
     # Contexto para o template
     context = {
-        'formset': formset,
+        'formset': formset, # <<< CORRIGIDO AQUI: AGORA É 'formset'
         'selected_date': selected_date,
         'selected_turno': selected_turno,
         'tipos_absenteismo': TipoAbsenteismo.objects.all().order_by('descricao'),
         'colaboradores_queryset': colaboradores_queryset, # Alterado para manter consistência com o nome da variável
         'absenteismos_dict': absenteismos_dict, # Ainda útil para lookup rápido no template, mas `formset` é o principal
-        'active_page': 'marcar_absenteismo_diario',
+        'active_page': 'rh:marcar_absenteismo_diario', # Adicionado namespace 'rh:'
     }
     return render(request, 'rh/absenteismo/marcar_absenteismo_diario.html', context)
 
@@ -642,7 +663,6 @@ def relatorio_absenteismo_form(request):
         if sigla_absenteismo_filtro: # Aplica filtro pela sigla
             queryset = queryset.filter(tipo_absenteismo__sigla__icontains=sigla_absenteismo_filtro)
         if cargo_filtro:
-            # Assumindo que ColaboradorEPI tem um campo cargo que é ForeignKey para Cargo
             queryset = queryset.filter(colaborador__cargo=cargo_filtro)
         if observacoes_filtro:
             queryset = queryset.filter(observacoes__icontains=observacoes_filtro)
@@ -685,6 +705,7 @@ def exportar_relatorio_absenteismo_csv(request):
     """
     form = RelatorioAbsenteismoFilterForm(request.GET)
     registros = []
+
 
     if form.is_valid():
         data_inicio = form.cleaned_data.get('data_inicio')
@@ -758,3 +779,386 @@ def exportar_relatorio_absenteismo_csv(request):
         ])
 
     return response
+
+# NOVO: View para a página inicial de Treinamentos
+# NOVO: View para a página inicial de Treinamentos
+def treinamento_home(request):
+    return render(request, 'rh/treinamento/home_treinamento.html')
+
+class TreinamentoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = Treinamento
+    template_name = 'rh/treinamento/treinamento_list.html'
+    context_object_name = 'treinamentos'
+    permission_required = 'rh.view_treinamento'
+    ordering = ['nome']
+    paginate_by = 10 # Adiciona paginação
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = self.request.GET.get('q')
+        if query:
+            queryset = queryset.filter(Q(nome__icontains=query) | Q(descricao__icontains=query))
+        return queryset
+
+class TreinamentoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = Treinamento
+    template_name = 'rh/treinamento/treinamento_detail.html'
+    context_object_name = 'treinamento'
+    permission_required = 'rh.view_treinamento'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Obter turmas relacionadas ordenadas por data_realizacao descendente
+        context['turmas'] = self.object.turmas.all().order_by('-data_realizacao')
+        return context
+
+class TreinamentoCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = Treinamento
+    form_class = TreinamentoForm
+    template_name = 'rh/treinamento/treinamento_form.html'
+    permission_required = 'rh.add_treinamento'
+    success_url = reverse_lazy('rh:treinamento_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Treinamento adicionado com sucesso!')
+        return super().form_valid(form)
+
+class TreinamentoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = Treinamento
+    form_class = TreinamentoForm
+    template_name = 'rh/treinamento/treinamento_form.html'
+    permission_required = 'rh.change_treinamento'
+    success_url = reverse_lazy('rh:treinamento_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Treinamento atualizado com sucesso!')
+        return super().form_valid(form)
+
+class TreinamentoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = Treinamento
+    template_name = 'rh/treinamento/treinamento_confirm_delete.html'
+    context_object_name = 'object' # Nome do objeto no template
+    permission_required = 'rh.delete_treinamento'
+    success_url = reverse_lazy('rh:treinamento_list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Treinamento excluído com sucesso!')
+        return super().delete(request, *args, **kwargs)
+
+
+class TurmaTreinamentoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = TurmaTreinamento
+    template_name = 'rh/treinamento/turma_treinamento_list.html'
+    context_object_name = 'turmas'
+    paginate_by = 10
+    permission_required = 'rh.view_turmatreinamento'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Anota a queryset com a contagem de participantes para cada turma
+        # O Django cria automaticamente o alias 'participacoes' se você definiu 'related_name' no seu modelo ParticipacaoTurma
+        queryset = queryset.annotate(participacoes_count=Count('participacoes'))
+
+        query = self.request.GET.get('q')
+        if query:
+            queryset = queryset.filter(
+                Q(treinamento__nome__icontains=query) |
+                Q(instrutor__icontains=query) |
+                Q(local__icontains=query)
+            )
+        # Garante que a ordenação seja aplicada APÓS a anotação para evitar problemas
+        return queryset.order_by('-data_realizacao', 'treinamento__nome')
+
+class TurmaTreinamentoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = TurmaTreinamento
+    template_name = 'rh/treinamento/turma_treinamento_detail.html'
+    context_object_name = 'turma'
+    permission_required = 'rh.view_turmatreinamento'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Obter participações relacionadas, ordenadas por nome do colaborador
+        context['participacoes'] = self.object.participacoes.all().select_related('colaborador').order_by('colaborador__nome_completo')
+        return context
+
+
+class TurmaTreinamentoCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = TurmaTreinamento
+    form_class = TurmaTreinamentoForm
+    template_name = 'rh/treinamento/turma_treinamento_form.html'
+    permission_required = 'rh.add_turmatreinamento'
+    # success_url definido em form_valid
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        # Ao criar, o campo participantes_selecionados não terá valor inicial
+        # data['colaboradores_disponiveis_json'] = json.dumps(list(ColaboradorEPI.objects.values('pk', 'nome_completo'))) # Não é mais necessário aqui
+        return data
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            self.object = form.save() # Salva a turma primeiro
+
+            # Processa os participantes selecionados do novo campo
+            participantes_selecionados = form.cleaned_data.get('participantes_selecionados')
+            if participantes_selecionados:
+                for colaborador in participantes_selecionados:
+                    # Cria uma nova ParticipacaoTurma para cada colaborador selecionado
+                    # Define o status inicial como 'P' (Pendente) ou outro padrão que desejar
+                    ParticipacaoTurma.objects.create(
+                        turma=self.object,
+                        colaborador=colaborador,
+                        status='P' # Defina um status padrão
+                    )
+                messages.success(self.request, "Turma de treinamento e participantes adicionados com sucesso!")
+            else:
+                messages.info(self.request, "Turma de treinamento adicionada, mas nenhum participante foi selecionado.")
+            
+            return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse_lazy('rh:turma_treinamento_detail', kwargs={'pk': self.object.pk})
+
+
+class TurmaTreinamentoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = TurmaTreinamento
+    form_class = TurmaTreinamentoForm
+    template_name = 'rh/treinamento/turma_treinamento_form.html'
+    permission_required = 'rh.change_turmatreinamento'
+    # success_url definido em form_valid
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        # Para edição, pré-selecionar os participantes já associados à turma
+        if not self.request.POST: # Apenas se não for um POST (primeiro carregamento)
+            current_participants = self.object.participacoes.values_list('colaborador__pk', flat=True)
+            data['form'].fields['participantes_selecionados'].initial = list(current_participants)
+        return data
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            self.object = form.save() # Salva as alterações da turma
+
+            # Obtém os participantes selecionados do formulário
+            novos_participantes_selecionados = form.cleaned_data.get('participantes_selecionados', [])
+            
+            # Obtém os participantes atuais da turma
+            participantes_atuais = set(self.object.participacoes.values_list('colaborador__pk', flat=True))
+            
+            # Converte a lista de novos participantes para um set de PKs para comparação
+            novos_participantes_ids = {colab.pk for colab in novos_participantes_selecionados}
+
+            # 1. Remover participantes que não estão mais selecionados
+            for participante_id in participantes_atuais:
+                if participante_id not in novos_participantes_ids:
+                    ParticipacaoTurma.objects.filter(turma=self.object, colaborador__pk=participante_id).delete()
+                    messages.info(self.request, f"Participação de colaborador (ID: {participante_id}) removida.")
+
+            # 2. Adicionar novos participantes que foram selecionados
+            for colaborador in novos_participantes_selecionados:
+                if colaborador.pk not in participantes_atuais:
+                    ParticipacaoTurma.objects.create(
+                        turma=self.object,
+                        colaborador=colaborador,
+                        status='P' # Defina um status padrão
+                    )
+                    messages.success(self.request, f"Participação de {colaborador.nome_completo} adicionada.")
+
+            messages.success(self.request, "Turma de treinamento e participantes atualizados com sucesso!")
+            return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse_lazy('rh:turma_treinamento_detail', kwargs={'pk': self.object.pk})
+
+
+class TurmaTreinamentoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = TurmaTreinamento # CORRIGIDO: Era TurmaTremaento
+    template_name = 'rh/treinamento/turma_treinamento_confirm_delete.html'
+    context_object_name = 'object' # Nome do objeto no template
+    permission_required = 'rh.delete_turmatreinamento'
+    success_url = reverse_lazy('rh:turmas_treinamento_list') # <-- CORRIGIDO AQUI!
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Turma de treinamento excluída com sucesso!')
+        return super().delete(request, *args, **kwargs)
+
+
+# ==============================================================================
+# Views para ParticipacaoTurma
+# ==============================================================================
+
+class ParticipacaoTurmaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = ParticipacaoTurma
+    template_name = 'rh/treinamento/participacao_turma_list.html'
+    context_object_name = 'participacoes'
+    permission_required = 'rh.view_participacaoturma'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = self.request.GET.get('q')
+        status = self.request.GET.get('status')
+        treinamento_id = self.request.GET.get('treinamento')
+        turma_id = self.request.GET.get('turma')
+
+        # Otimiza a consulta com select_related
+        queryset = queryset.select_related('colaborador', 'turma__treinamento', 'turma')
+
+        if query:
+            queryset = queryset.filter(
+                Q(colaborador__nome_completo__icontains=query) |
+                Q(colaborador__matricula__icontains=query) |
+                Q(turma__treinamento__nome__icontains=query) |
+                Q(observacoes__icontains=query)
+            )
+        if status:
+            queryset = queryset.filter(status=status)
+        if treinamento_id:
+            queryset = queryset.filter(turma__treinamento_id=treinamento_id)
+        if turma_id:
+            queryset = queryset.filter(turma_id=turma_id)
+
+        # Ordenação padrão
+        return queryset.order_by('-turma__data_realizacao', 'colaborador__nome_completo')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = ParticipacaoTurma.STATUS_PARTICIPACAO_CHOICES
+        context['treinamentos_filter'] = Treinamento.objects.all().order_by('nome')
+        context['turmas_filter'] = TurmaTreinamento.objects.all().order_by('-data_realizacao') # Para filtro de turma
+        context['filtros'] = {
+            'q': self.request.GET.get('q', ''),
+            'status': self.request.GET.get('status', ''),
+            'treinamento': self.request.GET.get('treinamento', ''),
+            'turma': self.request.GET.get('turma', ''),
+        }
+        return context
+
+class ParticipacaoTurmaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = ParticipacaoTurma
+    form_class = ParticipacaoTurmaForm
+    template_name = 'rh/treinamento/participacao_turma_form.html'
+    permission_required = 'rh.add_participacaoturma'
+
+    def get_success_url(self):
+        # Redireciona para os detalhes da turma se a participação foi criada a partir de uma turma específica
+        turma_pk = self.kwargs.get('turma_pk')
+        if turma_pk:
+            return reverse('rh:turma_treinamento_detail', kwargs={'pk': turma_pk})
+        return reverse_lazy('rh:participacao_turma_list') # Caso contrário, volta para a lista geral
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        turma_pk = self.kwargs.get('turma_pk')
+        if turma_pk:
+            # Se turma_pk está na URL, preenche o campo 'turma' do formulário
+            kwargs['initial'] = {'turma': turma_pk}
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['turma_pk'] = self.kwargs.get('turma_pk') # Passa o pk da turma para o template
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Participação em turma adicionada com sucesso!')
+        return super().form_valid(form)
+
+class ParticipacaoTurmaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = ParticipacaoTurma
+    form_class = ParticipacaoTurmaForm
+    template_name = 'rh/treinamento/participacao_turma_form.html'
+    permission_required = 'rh.change_participacaoturma'
+
+    def get_success_url(self):
+        # Redireciona para os detalhes da turma após a atualização
+        turma_pk = self.kwargs.get('turma_pk')
+        if turma_pk:
+            return reverse('rh:turma_treinamento_detail', kwargs={'pk': turma_pk})
+        return reverse_lazy('rh:participacao_turma_list') # Fallback
+
+
+class ParticipacaoTurmaDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = ParticipacaoTurma
+    template_name = 'rh/treinamento/participacao_turma_confirm_delete.html'
+    context_object_name = 'object' # Nome do objeto no template
+    permission_required = 'rh.delete_participacaoturma'
+
+    def get_success_url(self):
+        # Redireciona para os detalhes da turma após a exclusão
+        turma_pk = self.kwargs.get('turma_pk')
+        if turma_pk:
+            return reverse('rh:turma_treinamento_detail', kwargs={'pk': turma_pk})
+        return reverse_lazy('rh:participacao_turma_list') # Fallback
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Participação em turma excluída com sucesso!')
+        return super().delete(request, *args, **kwargs)
+
+
+# ==============================================================================
+# Views para Geração de Documentos (PDF, CSV) - Ajustadas
+# ==============================================================================
+
+class TurmaListaPresencaPDFView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'rh.view_turmatreinamento' # ou outra permissão relevante
+
+    def get(self, request, pk, *args, **kwargs):
+        turma = get_object_or_404(TurmaTreinamento, pk=pk)
+        participacoes = turma.participacoes.all().select_related('colaborador').order_by('colaborador__nome_completo')
+
+        template = get_template('rh/treinamento/pdf/lista_presenca_pdf.html')
+        context = {
+            'turma': turma,
+            'participacoes': participacoes,
+            'data_geracao': timezone.now(), # <--- AJUSTADO AQUI: Agora passa um objeto datetime
+        }
+        html = template.render(context)
+
+        result = io.BytesIO()
+        pdf = pisa.CreatePDF(html, dest=result)
+
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = slugify(f"lista_presenca_{turma.treinamento.nome}_{turma.data_realizacao.strftime('%Y%m%d')}")
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+            return response
+        return HttpResponse('Erro ao gerar PDF', status=400)
+
+
+class ParticipacaoCertificadoPDFView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'rh.view_participacaoturma' # ou outra permissão relevante
+
+    def get(self, request, pk, *args, **kwargs):
+        participacao = get_object_or_404(ParticipacaoTurma, pk=pk)
+        turma = participacao.turma
+        colaborador = participacao.colaborador
+
+        template = get_template('rh/treinamento/pdf/certificado_individual_pdf.html')
+        context = {
+            'participacao': participacao,
+            'turma': turma,
+            'treinamento': turma.treinamento,
+            'colaborador': colaborador,
+            'data_emissao': participacao.data_emissao_certificado or timezone.now().date(),
+            'carga_horaria': turma.treinamento.carga_horaria, # Garante que a carga horária está disponível
+        }
+        html = template.render(context)
+
+        result = io.BytesIO()
+        pdf = pisa.CreatePDF(html, dest=result)
+
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = slugify(f"certificado_{colaborador.nome_completo}_{turma.treinamento.nome}")
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+
+            # Opcional: Marcar o certificado como emitido após a geração
+            if not participacao.certificado_emitido:
+                participacao.certificado_emitido = True
+                if not participacao.data_emissao_certificado:
+                    participacao.data_emissao_certificado = timezone.now().date()
+                participacao.save()
+
+            return response
+        return HttpResponse('Erro ao gerar PDF', status=400)

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão de Treinamento{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h3 class="card-title mb-0">Confirmar Exclusão do Treinamento</h3>
+        </div>
+        <div class="card-body">
+            <p class="lead">Você tem certeza que deseja excluir o treinamento <strong>"{{ object.nome }}"</strong>?</p>
+            
+            <ul class="list-group mb-4">
+                <li class="list-group-item">
+                    <strong>Nome:</strong> {{ object.nome }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Descrição:</strong> {{ object.descricao|default_if_none:"Não informada" }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Carga Horária:</strong> {{ object.carga_horaria }} horas
+                </li>
+            </ul>
+
+            <div class="alert alert-warning" role="alert">
+                <strong>Atenção:</strong> Ao excluir este treinamento, **todas as turmas de treinamento e participações associadas a ele também serão permanentemente removidas**. Esta ação é irreversível.
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-between">
+                    {# Assumindo que você tem uma URL para listar treinamentos, ou volte para a home do RH #}
+                    <a href="{% url 'rh:treinamento_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times-circle me-2"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Confirmar Exclusão
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
